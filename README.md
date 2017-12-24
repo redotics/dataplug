@@ -1,2 +1,5 @@
-# datafly
-On the fly multi-model data saving client
+# datavor
+
+On the fly schemaless multi-model data saving client using ArangoDB
+
+
