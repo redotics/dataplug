@@ -1,6 +1,8 @@
-# DataHack
+# DataPlug
 
-On the fly schemaless multi-model data saving client using ArangoDB.
+A simple timeseries and graph data manager, in other words: on the fly schemaless multi-model data client.
+
+At least this is a "wannabee" !!!
 
 
 # Main requirements
@@ -12,7 +14,7 @@ On the fly schemaless multi-model data saving client using ArangoDB.
 
 # Installation
 
-TODO: pip install datahack (or/and similar)
+TODO: pip install dataplug (or/and similar)
 
-For now: copy the *datahack/* directory somewhere in your [PYTHONPATH](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH)
+For now: copy the *dataplug/* directory somewhere in your [PYTHONPATH](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH)
 
