@@ -2,7 +2,7 @@
 
 A simple timeseries and graph data manager, in other words: on the fly schemaless multi-model data client.
 
-At least this is a "wannabee" !!!
+Inspired by InfluxDB, ElasticSearch and other cool stuffs that always miss a little thing: Graphization !
 
 
 # Main requirements
@@ -16,5 +16,8 @@ At least this is a "wannabee" !!!
 
 TODO: pip install dataplug (or/and similar)
 
-For now: copy the *dataplug/* directory somewhere in your [PYTHONPATH](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH)
+Manually: copy the *dataplug/* directory somewhere in your [PYTHONPATH](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH)
 
+# Testing
+
+pytest -v
