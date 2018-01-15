@@ -74,9 +74,11 @@ class Node():
             fk = self.client.collection.name+"/"+self.key()
         return fk
 
-    def filter_non_auto_data(self, keep_fields=[]):
+    def filter_data(self, keep_fields=[]):
         """ Takes off all the parameters initiated by the DB starting with "_"
-            returining only the used fields, or user's initiated fields.
+            returning only the used fields, or user's initiated fields.
+
+            :param keep_fields: list of fields to keep, be they private or not.
         """
         pure_data = {}
         for k in self.data:
@@ -129,7 +131,7 @@ class Node():
             if key == "":
                 # INSERT new object with no predefined key
                 newbody = self.client.collection.insert(
-                    self.filter_non_auto_data(keep_fields=keep_private_fields),
+                    self.filter_data(keep_fields=keep_private_fields),
                     return_new=True)
                 if "_key" in newbody:
                     self.key(newbody["_key"])
@@ -137,8 +139,8 @@ class Node():
                 if self.client.collection.has(key):
                     # UPDATE existing object because this is the same key
                     self.client.collection.update_match(
-                        {"_key":key},
-                        self.filter_non_auto_data(keep_fields=keep_private_fields))
+                        {"_key": key},
+                        self.filter_data(keep_fields=keep_private_fields))
                     # From here I could get all the updated data and set it to self.data
                 else:
                     # INSERT new object with predefined key

@@ -13,6 +13,9 @@ def test_connection():
     # Port is correct and connection is established, even though domain does not exist
     CONN = dataplug.Client({"protocol": "http", "port": 7144, "domain": "datadoesnotexist"})
     assert CONN.is_connected is True
+    # Testing when graph is None
+    assert CONN.graph_outbounds_from("nonexistant/123Node") == {}
+    assert CONN.graph_outbounds_from("") == {}
 
 
 def test_create_collections():

@@ -63,7 +63,7 @@ def test_filter_node_data():
     node_a = dataplug.Node(data={"A": 3.4, "_key": "albert"},
                            client=client,
                            mandatory_features=["B", "C"])
-    node_data = node_a.filter_non_auto_data()
+    node_data = node_a.filter_data()
     assert "_key" not in node_data
     assert "_rev" not in node_data
     assert "_id" not in node_data
@@ -71,7 +71,7 @@ def test_filter_node_data():
     assert "B" in node_data
     assert "C" in node_data
 
-    node_data = node_a.filter_non_auto_data(keep_fields=["_key"])
+    node_data = node_a.filter_data(keep_fields=["_key"])
     assert "_key" in node_data
     assert "_rev" not in node_data
     assert "_id" not in node_data

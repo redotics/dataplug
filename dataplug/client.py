@@ -1,6 +1,9 @@
 from arango import ArangoClient
 # import arango.exceptions as ohoh
 
+EDGE_MARKER = "__"
+GRAPH_MARKER = "g--"
+
 
 class Client():
 
@@ -12,8 +15,10 @@ class Client():
         """
         # Local and object initializations
         self.is_connected = True
+        self.db_config = db_config
         self._domain = None
         self._collection = None
+        self._graph = None
 
         # Check client info to the Arango Database
         db_config = self.check_credentials(db_config)
@@ -72,9 +77,46 @@ class Client():
 
             if collection_name in map(lambda c: c['name'], self._domain.collections()):
                 self._collection = self._domain.collection(collection_name)
-            else:
+            elif len(collection_name) > 0:
                 self._collection = self._domain.create_collection(collection_name)
         return self._collection
+
+    @property
+    def graph(self):
+        return self._graph
+
+    @graph.setter
+    def graph(self, graph_name):
+        """ Only creates or reference to an existing graph name
+        """
+        try:
+            if graph_name in map(lambda c: c['name'], self._domain.graphs()):
+                self._graph = self._domain.graph(graph_name)
+            else:
+                self._graph = self._domain.create_graph(graph_name)
+        except Exception as eee:
+            pass
+
+    def set_graph(self, from_cols, to_cols):
+        """ Set graph with an edge definition
+
+            :param from_cols: array of strings of collection names as source collections
+            :param to_cols: array of strings of collection names as destination collections
+        """
+        if "collection" in self.db_config:
+            self.graph = GRAPH_MARKER+self.db_config["collection"]
+        else:
+            # TODO: setup a name with collections' prefixes extraction
+            self.graph = GRAPH_MARKER+"noname"
+
+        try:
+            self._collection = self.graph.create_edge_definition(
+                name=self.collection_name,
+                from_collections=from_cols,
+                to_collections=to_cols
+            )
+        except Exception as eee:
+            pass
 
     def check_credentials(self, db_config):
         """Fill missing fields with default values
@@ -198,3 +240,27 @@ class Client():
             info = {}
 
         return info
+
+    def graph_outbounds_from(self, from_full_key):
+        """
+
+            :param from_full_key: full id of the node from which we can the traverse outbound
+        """
+        if from_full_key == "" or self._graph is None:
+            return {}
+
+        traversal_results = {}
+        try:
+            print("DEBUG traversing from key: "+from_full_key)
+            traversal_results = self._graph.traverse(
+                start_vertex=from_full_key,
+                direction="outbound",
+                strategy="bfs",
+                edge_uniqueness="global",
+                vertex_uniqueness="global",
+            )
+        except:
+            print("Error:get_outbounds_from: could not traverse graph")
+
+        return self.traversal_filter(traversal_results, ignore_full_key=from_full_key)
+
