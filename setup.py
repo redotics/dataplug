@@ -17,7 +17,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="dataplug",
-    version="0.0.3",
+    version="0.0.4",
     description="Schemaless, NoSQL, multi-model data interactions on top ArangoDB",
     long_description=long_description,
     url="https://github.com/redsharpbyte/dataplug",
