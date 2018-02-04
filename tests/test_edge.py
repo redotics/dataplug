@@ -15,13 +15,6 @@ import dataplug
 """
 
 
-def create_node_a(client=None):
-    return dataplug.Node(
-        data={"A": 3.4},
-        client=None,
-        mandatory_features=["B", "C"])
-
-
 def test_edge_naming():
     esep = dataplug.client.EDGE_MARKER
     assert dataplug.Edge.edge_naming(["A", "B"]) == ["A"+esep+"B"]
@@ -32,12 +25,39 @@ def test_edge_naming():
 
 
 def test_creation():
-    # test from text to text
-    edge_t_t = dataplug.Edge("A/1", "BBB/123")
-    # test from node to node
-    # test from text to node
-    # test from node to text
-    # test from edge to edge
-    # test from text to edge
-    # test from edge to text
+    NODEA = "A/111"
+    NODEB = "B/222"
+    node_A = dataplug.Node(key=NODEA)
+    node_B = dataplug.Node(key=NODEB)
+    CONN = dataplug.Client({"protocol": "http", "port": 7144, "domain": "edgetest"})
+    node_1 = dataplug.Node(key=NODEA, client=CONN)
+    node_2 = dataplug.Node(key=NODEB, client=CONN)
+
+    def test_one_edge(edge):
+        assert edge.from_collection == "A"
+        assert edge.to_collection == "B"
+        assert edge.from_id == NODEA
+        assert edge.to_id == NODEB
+        assert edge.client is not None
+        assert edge.client.db_config["collection"] == "A__B"
+
+    # edge from text/node to text/node
+    edge = dataplug.Edge(NODEA, NODEB)
+    test_one_edge(edge)
+
+    edge = dataplug.Edge(node_A, node_B)
+    test_one_edge(edge)
+
+    edge = dataplug.Edge(node_1, node_2)
+    test_one_edge(edge)
+
+    edge = dataplug.Edge(NODEA, node_B)
+    test_one_edge(edge)
+
+    edge = dataplug.Edge(node_A, NODEB)
+    test_one_edge(edge)
+
+    # edge from edge to edge
+    # edge from text to edge
+    # edge from edge to text
     pass

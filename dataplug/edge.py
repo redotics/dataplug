@@ -95,10 +95,11 @@ class Edge(dataplug.node.Node):
                 node_id = this_id
         elif isinstance(this_id, dataplug.node.Node):
             node_id = this_id.full_key()
-            if this_id.client.collection is not None:
-                col_name = this_id.client.collection.name
-            if client_src is None:
-                db_config = this_id.client.db_config
+            if len(node_id) > 2:
+                if this_id.client.collection is not None:
+                    col_name = this_id.client.collection.name
+                if client_src is None:
+                    db_config = this_id.client.db_config
 
         if client_src is not None:
             db_config = client_src.db_config
@@ -113,20 +114,6 @@ class Edge(dataplug.node.Node):
         """ Update/Save function adapted to edges
         """
         super(Edge, self).upsave(keep_private_fields=["_from", "_to"])
-
-    def traversal_filter(self, traversal_dict, ignore_full_key=[], vertices_field="vertices", list_name="list"):
-        output = {}
-        output[list_name] = []
-        if vertices_field not in traversal_dict:
-            print("ERROR traversal results does not contain field: "+vertices_field)
-            print(traversal_dict)
-            return output
-
-        for vert in traversal_dict[vertices_field]:
-            if "_id" in vert:
-                if vert["_id"] not in ignore_full_key:
-                    output[list_name].append(self.clean_dict(vert))
-        return output
 
     @staticmethod
     def edge_naming(col_list, split_collections=True):
@@ -156,59 +143,3 @@ class Edge(dataplug.node.Node):
 
         return result
 
-#    @staticmethod
-#    def traverse(from_full_key, edges_list, depth="", what="vertex", rwhat="", direction="OUTBOUND", ignore_keys=["_key", "_rev"]):
-#        """
-#            Anonymous Traversal function using anonymous graph, so direct use of list of edges
-#        """
-#
-#        #--- Failsafes
-#        D = len(edges_list)
-#        if D == 0:
-#            return []
-#
-#        # By default catching only the last level of the traversal
-#        if depth == "":
-#            depth = str(D)+".."+str(D)
-#        
-#        # Defining return: Attention NO CHECKS are made here on good rwhats
-#        if rwhat == "":
-#            rwhat = what
-#
-#        # Building request string
-#        req_str = "FOR "+what+" IN "+depth+" "+direction+" @starter "
-#
-#        is_first_edge= True
-#        for edge in edges_list:
-#            if is_first_edge:
-#                is_first_edge = False
-#                req_str += edge
-#            else:
-#                req_str += ", "+edge
-#
-#        req_str += " RETURN "+rwhat
-#
-#        print("DEBUG ---------- anonymous graph request: "+req_str)
-#
-#        # "FOR vertex IN 2..2 OUTBOUND @starter u_o, o_s RETURN vertex",
-#        result = [] 
-#        try:
-#            cursor = settings.GRAPHDB.aql.execute(
-#                req_str
-#                ,bind_vars={'starter': from_full_key}
-#                #,batch_size=1
-#                ,count=True
-#            )
-#            result = [v for v in cursor]
-#            # do not forget me, else I'll be painful
-#            cursor.close()
-#        except:
-#            result = [] 
-#
-#        for r in result:
-#            print(type(r))
-#            for k in ignore_keys:
-#                if k in r:
-#                    del r[k]
-#                    
-#        return result

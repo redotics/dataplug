@@ -58,6 +58,9 @@ class Client():
             If the domain name has already been used then the domain is
             reloaded from the database else it is created if non-existent.
         """
+        if self._domain is not None:
+            if domain_name == self._domain.name:
+                return self._domain
         if domain_name not in self.client.databases():
             self._domain = self.client.create_database(domain_name)
         else:
@@ -133,7 +136,7 @@ class Client():
             db_config["password"] = ""
         return db_config
 
-    def collect(self, domain_name, collection_name):
+    def set(self, domain_name, collection_name):
         """ Set a new collection and domain at the same time """
         self.domain = domain_name
         self.collection = collection_name
@@ -153,15 +156,22 @@ class Client():
             pass
         return self._domain.delete_collection(self._collection.name, ignore_missing=True)
 
-    def all(self, limit=None, only_fields=["_id"]):
+    def all(self, qparams={}, only_fields=["_id"]):
         """ Return a list of this object
             This transforms the cursor list into a python list
 
-            :param limit: limit the number of objects returned
+            :param qparams: query parameters like;
+                limit: limit the number of objects returned
+                if any other parameter is given the find method is called
             :param only_fields: fields key to be selected
                                 in the returned objects
         """
         listing = []
+
+        if ("limit" in qparams and len(qparams) > 1) \
+        or ("limit" not in qparams and len(qparams) > 0):
+            # then we have query parameters to deal with
+            self.find(self.qparams_to_dict(qparams))
 
         # --- Just select all documents in this collection
         cursor = self.collection.all(limit=limit)
@@ -219,6 +229,9 @@ class Client():
 
         return rinfo
 
+    def qparams_to_dict(self, qparams):
+        return qparams
+
     def find(self, sdict):
         """ Simple search that returns the dict for the found object information
 
@@ -263,4 +276,78 @@ class Client():
             print("Error:get_outbounds_from: could not traverse graph")
 
         return self.traversal_filter(traversal_results, ignore_full_key=from_full_key)
+
+    def traverse(self, from_full_key, edges_list, depth="", what="vertex", rwhat="", direction="OUTBOUND", ignore_keys=["_key", "_rev"]):
+        """ Anonymous Traversal function using anonymous graph, so direct use
+            of list of edges
+
+            :param from_full_key: ID of the starting node point
+            :param edges_list: list of edge collections to traverse
+            :return: the array of "what" was traversed.
+        """
+
+        # --- Failsafes
+        D = len(edges_list)
+        if D == 0:
+            return []
+
+        # By default catching only the last level of the traversal
+        if depth == "":
+            depth = str(D)+".."+str(D)
+
+        # Defining return: Attention NO CHECKS are made here on good rwhats
+        if rwhat == "":
+            rwhat = what
+
+        # Building request string
+        req_str = "FOR "+what+" IN "+depth+" "+direction+" @starter "
+
+        is_first_edge= True
+        for edge in edges_list:
+            if is_first_edge:
+                is_first_edge = False
+                req_str += edge
+            else:
+                req_str += ", "+edge
+
+        req_str += " RETURN "+rwhat
+
+        print("DEBUG ---------- anonymous graph request: "+req_str)
+
+        # "FOR vertex IN 2..2 OUTBOUND @starter u_o, o_s RETURN vertex",
+        result = []
+        try:
+            cursor = self._domain.aql.execute(
+                req_str,
+                bind_vars={'starter': from_full_key},
+                # batch_size=1,
+                count=True
+            )
+            result = [v for v in cursor]
+            # do not forget to close the cursor, else it'll be painful
+            cursor.close()
+        except:
+            result = []
+
+        for r in result:
+            print(type(r))
+            for k in ignore_keys:
+                if k in r:
+                    del r[k]
+                    
+        return result
+
+    def traversal_filter(self, traversal_dict, ignore_full_key=[], vertices_field="vertices", list_name="list"):
+        output = {}
+        output[list_name] = []
+        if vertices_field not in traversal_dict:
+            print("ERROR traversal results does not contain field: "+vertices_field)
+            print(traversal_dict)
+            return output
+
+        for vert in traversal_dict[vertices_field]:
+            if "_id" in vert:
+                if vert["_id"] not in ignore_full_key:
+                    output[list_name].append(self.clean_dict(vert))
+        return output
 

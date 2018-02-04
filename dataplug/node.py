@@ -6,20 +6,23 @@ class Node():
     def __init__(self,
                  data={},
                  key="",
+                 node_id="",
                  client=None,
                  mandatory_features=[],
-                 update_if_exist=False):
+                 update=False):
         """
             :param data: dictionnary of data
             :param key: only the key part in id "collection_name/key"
-                       because used on the collection object already.
-                       Take precedence on an eventual "_key" field.
+                        because used on the collection object already.
+                        Take precedence on an eventual "_key" field.
+            :param node_id: the full id of the node, take precedence on the key
+                            input parameter.
             :param client: dependency injection for database client
-            :param mandatory_features: a way to define a model of nodes,
-                        where some mandatory fields are required.
-            :param update_if_exist: if True, it gets the corresponding
-                        object from the database and updates its data
-                        with the input data from `data`
+            :param mandatory_features: a way to define a model of nodes, where
+                                       some mandatory fields are required.
+            :param update: if True, it gets the corresponding object
+                                    from the database and updates its data
+                                    with the input data from `data`
         """
 
         self.client = client
@@ -27,9 +30,15 @@ class Node():
         self._data = {}
         self.data = data
 
+        id_parts = node_id.split("/")
+        if len(id_parts) == 2:
+            key = id_parts[1]
+            if self.client is not None:
+                self.client.collection = id_parts[0]
+
         # First we see if we have a key and get this object
         current_key = self.key(key)
-        if current_key != "" and update_if_exist and self.client is not None:
+        if current_key != "" and update and self.client is not None:
             # Checking in data from provided key and checking mandatory fields
             self.data = self.client.get(current_key)
             # Updating data with eventual new fields from constructor inputs
@@ -70,6 +79,8 @@ class Node():
 
     def full_key(self):
         fk = ""
+        if self.client is None:
+            return fk
         if self.client.collection is not None:
             fk = self.client.collection.name+"/"+self.key()
         return fk
