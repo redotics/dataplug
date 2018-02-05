@@ -27,8 +27,8 @@ def test_edge_naming():
 def test_creation():
     NODEA = "A/111"
     NODEB = "B/222"
-    node_A = dataplug.Node(key=NODEA)
-    node_B = dataplug.Node(key=NODEB)
+    node_A = dataplug.Node(node_id=NODEA)
+    node_B = dataplug.Node(node_id=NODEB)
     CONN = dataplug.Client({"protocol": "http", "port": 7144, "domain": "edgetest"})
     node_1 = dataplug.Node(key=NODEA, client=CONN)
     node_2 = dataplug.Node(key=NODEB, client=CONN)
