@@ -1,8 +1,12 @@
+import os
 from arango import ArangoClient
 # import arango.exceptions as ohoh
 
 EDGE_MARKER = "__"
 GRAPH_MARKER = "g--"
+
+DEFAULT_PORT = os.getenv("DATAPLUG_DEFAULT_PORT", 8529)
+DEFAULT_HOST = os.getenv("DATAPLUG_DEFAULT_HOST", "localhost")
 
 
 class Client():
@@ -103,8 +107,11 @@ class Client():
     def set_graph(self, from_cols, to_cols):
         """ Set graph with an edge definition
 
-            :param from_cols: array of strings of collection names as source collections
-            :param to_cols: array of strings of collection names as destination collections
+            :param from_cols: array of strings of collection names as source
+            collections
+
+            :param to_cols: array of strings of collection names as destination
+            collections
         """
         if "collection" in self.db_config:
             self.graph = GRAPH_MARKER+self.db_config["collection"]
@@ -125,11 +132,11 @@ class Client():
         """Fill missing fields with default values
         """
         if "protocol" not in db_config:
-            db_config["protocol"] = "https"
+            db_config["protocol"] = "http"
         if "host" not in db_config:
-            db_config["host"] = "localhost"
+            db_config["host"] = DEFAULT_HOST
         if "port" not in db_config:
-            db_config["port"] = 8529
+            db_config["port"] = DEFAULT_PORT
         if "username" not in db_config:
             db_config["username"] = ""
         if "password" not in db_config:
@@ -168,18 +175,24 @@ class Client():
         """
         listing = []
 
+        cursor = None
+
         if ("limit" in qparams and len(qparams) > 1) \
         or ("limit" not in qparams and len(qparams) > 0):
             # then we have query parameters to deal with
-            self.find(self.qparams_to_dict(qparams))
+            cursor = self.find(self.qparams_to_dict(qparams))
+        else:
+            limit = None
+            if "limit" in qparams:
+                limit = qparams["limit"]
+            # --- Just select all documents in this collection
+            cursor = self.collection.all(limit=limit)
 
-        # --- Just select all documents in this collection
-        cursor = self.collection.all(limit=limit)
         if cursor.count() > 0:
             listing = cursor.batch()
             for L in listing:
                 for x in [field not in only_fields for field in L]:
-                    L.pop(x)
+                    L.pop(x, None)
 
         return listing
 
