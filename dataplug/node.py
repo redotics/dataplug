@@ -1,4 +1,5 @@
 # import arango.exceptions as ohoh
+import dataplug
 
 
 class Node():
@@ -21,14 +22,18 @@ class Node():
             :param mandatory_features: a way to define a model of nodes, where
                                        some mandatory fields are required.
             :param update: if True, it gets the corresponding object
-                                    from the database and updates its data
-                                    with the input data from `data`
+                           from the database and updates its local data with
+                           the input data from `data`. Update to the database
+                           must be done by calling upsave()
         """
 
         self.client = client
         self.mandatory_features = mandatory_features
         self._data = {}
         self.data = data
+
+        if self.client is None:
+            self.client = dataplug.Client()
 
         id_parts = node_id.split("/")
         if len(id_parts) == 2:
@@ -68,6 +73,9 @@ class Node():
             An empty key is never set so that any new node will be given a new
             key by the database.
         """
+        if not isinstance(new_key, str):
+            new_key = str(new_key)
+
         # Local SET
         if len(new_key) > 0:
             self._data["_key"] = str(new_key)
