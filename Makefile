@@ -24,3 +24,7 @@ pypi: build
 testpypi: build
 	twine upload --repository testpypi dist/*
 	@# twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+test:
+	export DATAPLUG_DEFAULT_PORT=7144
+	pytest -v tests
