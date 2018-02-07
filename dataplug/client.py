@@ -85,7 +85,10 @@ class Client():
             if collection_name in map(lambda c: c['name'], self._domain.collections()):
                 self._collection = self._domain.collection(collection_name)
             elif len(collection_name) > 0:
-                self._collection = self._domain.create_collection(collection_name)
+                is_edge = False
+                if "edge" in self.db_config:
+                    is_edge = self.db_config["edge"]
+                self._collection = self._domain.create_collection(collection_name, edge=is_edge)
         return self._collection
 
     @property
