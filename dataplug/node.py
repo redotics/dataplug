@@ -7,17 +7,15 @@ class Node():
     def __init__(self,
                  data={},
                  key="",
-                 node_id="",
                  client=None,
                  mandatory_features=[],
                  update=False):
         """
             :param data: dictionnary of data
-            :param key: only the key part in id "collection_name/key"
-                        because used on the collection object already.
+            :param key: full or only-key part part in id "collection_name/key"
+                        If the only-key is givent the collection information
+                        should appear in the given client.
                         Take precedence on an eventual "_key" field.
-            :param node_id: the full id of the node, take precedence on the key
-                            input parameter.
             :param client: dependency injection for database client
             :param mandatory_features: a way to define a model of nodes, where
                                        some mandatory fields are required.
@@ -33,21 +31,16 @@ class Node():
         self.data = data
 
         if self.client is None:
-            self.client = dataplug.Client()
+            print("NODE ------------- ----------------------------------------- start client.")
+            self.client = dataplug.client.Client()
 
-        id_parts = node_id.split("/")
-        if len(id_parts) == 2:
-            key = id_parts[1]
-            if self.client is not None:
-                self.client.collection = id_parts[0]
-
-        # First we see if we have a key and get this object
         current_key = self.key(key)
         if current_key != "" and update and self.client is not None:
             # Checking in data from provided key and checking mandatory fields
             self.data = self.client.get(current_key)
             # Updating data with eventual new fields from constructor inputs
             self._data.update(data)
+        print("DEBUG Node, client -1- "+str(self.client))
 
     @property
     def data(self):
@@ -72,25 +65,39 @@ class Node():
 
             An empty key is never set so that any new node will be given a new
             key by the database.
+
+            :new_key: nothing, key part or full id of a node
         """
         if not isinstance(new_key, str):
             new_key = str(new_key)
 
-        # Local SET
+        # Agile local SET
         if len(new_key) > 0:
-            self._data["_key"] = str(new_key)
+            col_name, new_key = dataplug.utils.split_node_id(new_key)
+            self.client.collection = col_name
+            print("NODE key():c "+col_name)
+            print("NODE key():k "+new_key)
+
+            self._data["_key"] = new_key
             return self._data["_key"]
+
         # Local GET
         if "_key" in self._data:
-            return str(self._data["_key"])
+            return self._data["_key"]
         return ""
 
     def full_key(self):
+        """ Returns the node id, reconstructed with available information
+        """
+        print("___full_key    "+str(self.client.db_config))
         fk = ""
         if self.client is None:
             return fk
         if self.client.collection is not None:
             fk = self.client.collection.name+"/"+self.key()
+        else:
+            if "collection" in self.client.db_config:
+                fk = self.client.db_config["collection"]+"/"+self.key()
         return fk
 
     def filter_data(self, keep_fields=[]):
@@ -105,6 +112,16 @@ class Node():
                 if k[0:1] != "_" or k in keep_fields:
                     pure_data[k] = self.data[k]
         return pure_data
+
+    def delete(self, match_fields=None):
+        try:
+            cur = self.client.collection.find({"_from": self._data["_from"], "_to": self._data["_to"]})
+            if cur.count() == 1:
+                full_id = cur.next()["_id"]
+                cur = self.client.collection.delete(document=full_id, return_old=False)
+        except Exception as eee:
+            print("DEBUG delete")
+            pass
 
     def upsave(self, keep_private_fields=[], update=False):
         """ Save or update an category document

@@ -1,8 +1,8 @@
 import os
+import copy
 from arango import ArangoClient
 # import arango.exceptions as ohoh
 
-EDGE_MARKER = "__"
 GRAPH_MARKER = "g--"
 
 DEFAULT_PORT = os.getenv("DATAPLUG_DEFAULT_PORT", 8529)
@@ -11,7 +11,7 @@ DEFAULT_HOST = os.getenv("DATAPLUG_DEFAULT_HOST", "localhost")
 
 class Client():
 
-    def __init__(self, db_config={}):
+    def __init__(self, config={}):
         """Initiate the connection keeper
 
             Arango databases are referred as domains
@@ -19,22 +19,21 @@ class Client():
         """
         # Local and object initializations
         self.is_connected = True
-        self.db_config = db_config
         self._domain = None
         self._collection = None
         self._graph = None
 
         # Check client info to the Arango Database
-        db_config = self.check_credentials(db_config)
+        self._db_config = self.check_credentials(copy.deepcopy(config))
 
         # Database server connection
         try:
             self.client = ArangoClient(
-                protocol=db_config['protocol'],
-                host=db_config['host'],
-                port=db_config['port'],
-                username=db_config['username'],
-                password=db_config['password'])
+                protocol=self._db_config['protocol'],
+                host=self._db_config['host'],
+                port=self._db_config['port'],
+                username=self._db_config['username'],
+                password=self._db_config['password'])
         except Exception as eee:
             self.is_connected = False
 
@@ -46,10 +45,18 @@ class Client():
             except Exception as eee:
                 self.is_connected = False
 
-            if self.is_connected and "domain" in db_config:
-                self.domain = db_config["domain"]
-                if "collection" in db_config:
-                    self.collection = db_config["collection"]
+            if self.is_connected and "domain" in self._db_config:
+                self.domain = self._db_config["domain"]
+                if "collection" in self._db_config:
+                    self.collection = self._db_config["collection"]
+
+    @property
+    def db_config(self):
+        return self._db_config
+
+    @db_config.setter
+    def db_config(self, conf):
+        self._db_config = conf
 
     @property
     def domain(self):
@@ -65,10 +72,13 @@ class Client():
         if self._domain is not None:
             if domain_name == self._domain.name:
                 return self._domain
+
+        self._db_config["domain"] = domain_name
         if domain_name not in self.client.databases():
             self._domain = self.client.create_database(domain_name)
         else:
             self._domain = self.client.database(domain_name)
+
         return self._domain
 
     @property
@@ -77,18 +87,27 @@ class Client():
 
     @collection.setter
     def collection(self, collection_name):
+        """ A collection is generally defined by configuration
+            but sometimes it is guessed by node names
+
+            :param collection_name: new collection to get, create or check
+        """
         if self._domain:
             if self._collection:
                 if collection_name == self._collection.name:
                     return self._collection
 
+            self._db_config["collection"] = collection_name
             if collection_name in map(lambda c: c['name'], self._domain.collections()):
                 self._collection = self._domain.collection(collection_name)
             elif len(collection_name) > 0:
                 is_edge = False
-                if "edge" in self.db_config:
-                    is_edge = self.db_config["edge"]
+                if "edge" in self._db_config:
+                    is_edge = self._db_config["edge"]
                 self._collection = self._domain.create_collection(collection_name, edge=is_edge)
+        else:  # no domain is defined
+            self._db_config["collection"] = collection_name
+
         return self._collection
 
     @property
@@ -116,8 +135,8 @@ class Client():
             :param to_cols: array of strings of collection names as destination
             collections
         """
-        if "collection" in self.db_config:
-            self.graph = GRAPH_MARKER+self.db_config["collection"]
+        if "collection" in self._db_config:
+            self.graph = GRAPH_MARKER+self._db_config["collection"]
         else:
             # TODO: setup a name with collections' prefixes extraction
             self.graph = GRAPH_MARKER+"noname"
@@ -208,9 +227,6 @@ class Client():
         info = {}
 
         if key == "":
-            key = self.key()
-
-        if key == "":
             return info
 
         try:
@@ -280,7 +296,6 @@ class Client():
 
         traversal_results = {}
         try:
-            print("DEBUG traversing from key: "+from_full_key)
             traversal_results = self._graph.traverse(
                 start_vertex=from_full_key,
                 direction="outbound",
