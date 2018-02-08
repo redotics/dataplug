@@ -1,6 +1,6 @@
 # import arango.exceptions as ohoh
 import dataplug
-
+import copy
 
 class Node():
 
@@ -25,14 +25,22 @@ class Node():
                            must be done by calling upsave()
         """
 
-        self.client = client
         self.mandatory_features = mandatory_features
+
+        # Client intialization does not impact data
+        if client is None:
+            print("NODE ------------- ----------------------------------------- start client.")
+            self.client = dataplug.client.Client()
+        else:
+            # TODO have a flexible client that connects per config
+            # move part of the config to the Node (domain/collection...)
+            #self.client = copy.deepcopy(client)
+            self.client = client
+
+        # Data initialization can impact client, so done after
         self._data = {}
         self.data = data
 
-        if self.client is None:
-            print("NODE ------------- ----------------------------------------- start client.")
-            self.client = dataplug.client.Client()
 
         current_key = self.key(key)
         if current_key != "" and update and self.client is not None:

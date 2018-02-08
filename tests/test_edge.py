@@ -67,9 +67,10 @@ def test_creation():
     node_A = dataplug.Node(key=NODEA)
     node_B = dataplug.Node(key=NODEB)
     # node objects with clients
-    CONN = dataplug.Client({"protocol": "http", "port": 7144, "domain": "edgetest"})
-    node_1 = dataplug.Node(key=NODEA, client=CONN)
-    node_2 = dataplug.Node(key=NODEB, client=CONN)
+    CONN1 = dataplug.Client({"protocol": "http", "port": 7144, "domain": "edgetest"})
+    CONN2 = dataplug.Client({"protocol": "http", "port": 7144, "domain": "edgetest"})
+    node_1 = dataplug.Node(key=NODEA, client=CONN1)
+    node_2 = dataplug.Node(key=NODEB, client=CONN2)
     # node objects with clients with defined collection
     #   CONN = dataplug.Client({"protocol": "http", "port": 7144, "collection":"C", "domain": "edgetest"})
     #   node_3 = dataplug.Node(key="333", client=CONN)
@@ -100,6 +101,7 @@ def test_creation():
     edge = dataplug.Edge(NODEA, node_B)
     test_one_edge(edge)
 
+    print("DEBUG ************************************* "+node_A.full_key())
     edge = dataplug.Edge(node_A, NODEB)
     test_one_edge(edge)
 

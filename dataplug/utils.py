@@ -1,4 +1,5 @@
 import dataplug
+import copy
 
 EDGE_MARKER = "__"
 
@@ -40,14 +41,14 @@ def extract_info(this_id, client_src):
         node_id = this_id
 
     if client_src is None and isinstance(this_id, dataplug.node.Node):
-        config = this_id.client.db_config
+        config = copy.deepcopy(this_id.client.db_config)
 
     if client_src is not None:
 
         if isinstance(client_src, dataplug.client.Client):
-            config = client_src.db_config
+            config = copy.deepcopy(client_src.db_config)
         elif isinstance(client_src, dict):
-            config = client_src
+            config = copy.deepcopy(client_src)
 
         if "domain" in config:
             dom_name = config["domain"]
