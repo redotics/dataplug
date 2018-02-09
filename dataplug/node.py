@@ -1,4 +1,5 @@
 import dataplug
+import copy
 
 
 class Node():
@@ -30,7 +31,7 @@ class Node():
 
         if domain == "":
             domain = dataplug.client.DEFAULT_DOMAIN
-        self.client = dataplug.client.Client(domain, "", client_config)
+        self.client = dataplug.client.Client(domain, collection, client_config)
 
         # Data initialization can impact client, so done after
         self._data = {}
@@ -38,7 +39,7 @@ class Node():
 
         current_key = self.key(key)
 
-        if current_key != "" and update and self.client is not None:
+        if current_key != "" and update:
             # Checking in data from provided key and checking mandatory fields
             self.data = self.client.get(current_key)
             # Updating data with eventual new fields from constructor inputs
@@ -55,7 +56,7 @@ class Node():
             :param data: New data dictionnary to input
         """
         if data != {}:
-            self._data = data
+            self._data = copy.deepcopy(data)
 
         if self.mandatory_features != []:
             for f in self.mandatory_features:
@@ -78,8 +79,6 @@ class Node():
             col_name, new_key = dataplug.utils.split_node_id(new_key)
             if len(col_name) > 0:
                 self.client.collection = col_name
-            print("NODE key():c "+col_name)
-            print("NODE key():k "+new_key)
 
             self._data["_key"] = new_key
             return self._data["_key"]
@@ -92,7 +91,6 @@ class Node():
     def full_key(self):
         """ Returns the node id, reconstructed with available information
         """
-        print("___full_key    "+str(self.client.db_config))
         fk = ""
         if self.client is None:
             return fk
@@ -117,16 +115,13 @@ class Node():
                     pure_data[k] = self.data[k]
         return pure_data
 
-    def delete(self, match_fields=None):
-        """ delete a matching document """
+    def delete(self):
+        """ delete a document by full_key """
         try:
-            cur = self.client.collection.find({"_from": self._data["_from"], "_to": self._data["_to"]})
-            if cur.count() == 1:
-                full_id = cur.next()["_id"]
-                cur = self.client.collection.delete(document=full_id, return_old=False)
+            #self.client.collection.delete(document=self.full_key(), return_old=False)
+            self.client.delete(self.key())
         except Exception as eee:
-            print("DEBUG delete")
-            pass
+            print("Node: problem during delete: {}".format(eee))
 
     def upsave(self, keep_private_fields=[], update=False):
         """ Save or update an category document

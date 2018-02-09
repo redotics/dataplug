@@ -266,7 +266,7 @@ class Client():
 
         return info
 
-    def delete(self, key=""):
+    def delete(self, key):
         """ Delete the node/document with given key, from current collection
 
             :param key: key of the championship, else the current data is used
@@ -277,12 +277,15 @@ class Client():
 
         rinfo = False
 
-        if key == "":
+        if not isinstance(key, str) or key == "":
             return rinfo
 
         try:
-            rinfo = self.collection.delete(str(key))
+            rinfo = self.collection.delete(document=key, ignore_missing=True, return_old=False)
+            if rinfo is not False:
+                rinfo = True
         except Exception as eee:
+            print(eee)
             rinfo = False
 
         return rinfo

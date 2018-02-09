@@ -72,21 +72,26 @@ def test_filter_node_data():
 
 def test_node_upsave():
     client_config = {"protocol": "http", "port": 7144}
+    C5="users"
 
     node_nokey1 = dataplug.Node(
                            data={"A": 1.41},
+                           collection=C5,
                            client_config=client_config,
                            mandatory_features=["A", "B", "C"])
     node_nokey2 = dataplug.Node(
                            data={"A": 1.41, "more": "is_less"},
+                           collection=C5,
                            client_config=client_config,
                            mandatory_features=["A", "B", "C"])
     node_nokey3 = dataplug.Node(
                            data={"A": 1.41, "tiny": "angstrom"},
+                           collection=C5,
                            client_config=client_config,
                            mandatory_features=["A", "B", "C"])
     node_key = dataplug.Node(
                            data={"A": 3.14, "_key": "einstein"},
+                           collection=C5,
                            client_config=client_config,
                            mandatory_features=["A", "B", "C"])
 
@@ -115,4 +120,53 @@ def test_node_upsave():
     assert "more" not in node_nokey3.data
     assert "tiny" in node_nokey3.data
 
-    # client.delete_collection()
+    node_key.client.delete_collection()
+
+
+def test_delete():
+    client_config = {"protocol": "http", "port": 7144}
+    C5="users"
+
+    node_nokey1 = dataplug.Node(
+                           data={"A": 1.41, "B": 3.4},
+                           collection=C5,
+                           client_config=client_config,
+                           mandatory_features=["A", "B"])
+    node_nokey2 = dataplug.Node(
+                           data={"A": 1.41, "B": 3.4},
+                           collection=C5,
+                           client_config=client_config,
+                           mandatory_features=["A", "B"])
+
+    assert node_nokey1.upsave() is True
+    assert node_nokey2.upsave() is True
+    assert node_nokey1.full_key() is not node_nokey2.full_key()
+    assert node_nokey1.full_key() != ""
+    assert node_nokey2.full_key() != ""
+
+    # Delete
+    node_nokey1.delete()
+
+    assert node_nokey1.full_key() != ""
+    assert len(node_nokey1.client.get(node_nokey1.key())) == 0
+    key2_data = node_nokey1.client.get(node_nokey2.key())
+    for v in key2_data:
+        if not v.startswith("_"):
+            assert v in node_nokey2.data
+            assert node_nokey2.data[v] == key2_data[v]
+
+    # Then retrieve
+    node_retriever = dataplug.Node(
+                           key=node_nokey2.key(),
+                           data={"D": 81.41, "C": 1103.4},
+                           collection=C5,
+                           client_config=client_config,
+                           update=True,
+                           mandatory_features=["B"])
+    for c in ["A", "B", "C", "D"]:
+        assert c in node_retriever.data
+    assert node_retriever.data["A"] == 1.41
+    assert node_retriever.data["B"] == 3.4
+    assert node_retriever.data["C"] == 1103.4
+    assert node_retriever.data["D"] == 81.41
+
