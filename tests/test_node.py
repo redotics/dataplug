@@ -15,15 +15,8 @@ import dataplug
 """
 
 
-def create_node_a(client=None):
-    return dataplug.Node(
-        data={"A": 3.4},
-        client=None,
-        mandatory_features=["B", "C"])
-
-
 def test_check_mandatory_fields():
-    node_a = create_node_a()
+    node_a = dataplug.Node(data={"A": 3.4}, mandatory_features=["B", "C"])
     data = {"B": 2.3, "D": 0.0}
     for field in ["A", "B", "C"]:
         assert field in node_a.data
@@ -36,33 +29,28 @@ def test_check_mandatory_fields():
 
 
 def test_full_key():
-    client = dataplug.Client({
-        "protocol": "http",
-        "port": 7144,
-        "domain": "dataflex",
-        "collection": "node_test"})
-    assert client.is_connected is True
+    C8 = "node_test"
+    client_config = {"protocol": "http", "port": 7144}
 
     node_a = dataplug.Node(data={"A": 3.4, "_key": "albert"},
-                           client=client,
+                           client_config=client_config,
                            mandatory_features=["B", "C"])
+    node_a.client.collection = C8
     assert node_a.key() == "albert"
-    assert node_a.full_key() == "node_test/albert"
+    assert node_a.full_key() == C8+"/albert"
 
-    client.delete_collection()
+    node_a.client.delete_collection()
 
 
 def test_filter_node_data():
-    client = dataplug.Client({
-        "protocol": "http",
-        "port": 7144,
-        "domain": "dataflex",
-        "collection": "node_test"})
-    assert client.is_connected is True
+    D1 = "dataflexT7"
+    C1 = "fip"
+    client_config = {"protocol": "http", "port": 7144}
 
-    node_a = dataplug.Node(data={"A": 3.4, "_key": "albert"},
-                           client=client,
+    node_a = dataplug.Node(D1, C1, data={"A": 3.4, "_key": "albert"},
+                           client_config=client_config,
                            mandatory_features=["B", "C"])
+    assert node_a.client.is_connected() is True
     node_data = node_a.filter_data()
     assert "_key" not in node_data
     assert "_rev" not in node_data
@@ -79,32 +67,27 @@ def test_filter_node_data():
     assert "B" in node_data
     assert "C" in node_data
 
-    client.delete_collection()
+    node_a.client.delete_collection()
 
 
 def test_node_upsave():
-    client = dataplug.Client({
-        "protocol": "http",
-        "port": 7144,
-        "domain": "dataflex",
-        "collection": "node_test"})
-    assert client.is_connected is True
+    client_config = {"protocol": "http", "port": 7144}
 
     node_nokey1 = dataplug.Node(
                            data={"A": 1.41},
-                           client=client,
+                           client_config=client_config,
                            mandatory_features=["A", "B", "C"])
     node_nokey2 = dataplug.Node(
                            data={"A": 1.41, "more": "is_less"},
-                           client=client,
+                           client_config=client_config,
                            mandatory_features=["A", "B", "C"])
     node_nokey3 = dataplug.Node(
                            data={"A": 1.41, "tiny": "angstrom"},
-                           client=client,
+                           client_config=client_config,
                            mandatory_features=["A", "B", "C"])
     node_key = dataplug.Node(
                            data={"A": 3.14, "_key": "einstein"},
-                           client=client,
+                           client_config=client_config,
                            mandatory_features=["A", "B", "C"])
 
     assert node_nokey1.key() == ""
@@ -132,4 +115,4 @@ def test_node_upsave():
     assert "more" not in node_nokey3.data
     assert "tiny" in node_nokey3.data
 
-    client.delete_collection()
+    # client.delete_collection()

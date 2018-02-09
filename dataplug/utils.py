@@ -84,3 +84,22 @@ def edge_naming(col_list, split_collections=True):
         result.append(name)
 
     return result
+
+
+def raise_non_string(param):
+    """ Will raise TypeError if the given param is not a string """
+    if not isinstance(param, str):
+        raise TypeError("Given parameter is not a string.")
+
+
+def raise_empty_string(param):
+    """ Will raise TypeError if the given param is not a string """
+    raise_non_string(param)
+    if len(param) == 0:
+        raise ValueError("Given parameter is an empty string.")
+
+
+def raise_wrong_db_string(param):
+    raise_empty_string(param)
+    if param.startswith("_"):
+        raise ValueError("Given parameter looks like a reserved database name.")

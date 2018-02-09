@@ -1,21 +1,22 @@
-# import arango.exceptions as ohoh
 import dataplug
-import copy
+
 
 class Node():
 
     def __init__(self,
-                 data={},
+                 domain="",
+                 collection="",
                  key="",
-                 client=None,
+                 data={},
                  mandatory_features=[],
+                 client_config={},
                  update=False):
         """
-            :param data: dictionnary of data
             :param key: full or only-key part part in id "collection_name/key"
                         If the only-key is givent the collection information
                         should appear in the given client.
                         Take precedence on an eventual "_key" field.
+            :param data: dictionnary of data
             :param client: dependency injection for database client
             :param mandatory_features: a way to define a model of nodes, where
                                        some mandatory fields are required.
@@ -27,28 +28,21 @@ class Node():
 
         self.mandatory_features = mandatory_features
 
-        # Client intialization does not impact data
-        if client is None:
-            print("NODE ------------- ----------------------------------------- start client.")
-            self.client = dataplug.client.Client()
-        else:
-            # TODO have a flexible client that connects per config
-            # move part of the config to the Node (domain/collection...)
-            #self.client = copy.deepcopy(client)
-            self.client = client
+        if domain == "":
+            domain = dataplug.client.DEFAULT_DOMAIN
+        self.client = dataplug.client.Client(domain, "", client_config)
 
         # Data initialization can impact client, so done after
         self._data = {}
         self.data = data
 
-
         current_key = self.key(key)
+
         if current_key != "" and update and self.client is not None:
             # Checking in data from provided key and checking mandatory fields
             self.data = self.client.get(current_key)
             # Updating data with eventual new fields from constructor inputs
             self._data.update(data)
-        print("DEBUG Node, client -1- "+str(self.client))
 
     @property
     def data(self):
@@ -82,7 +76,8 @@ class Node():
         # Agile local SET
         if len(new_key) > 0:
             col_name, new_key = dataplug.utils.split_node_id(new_key)
-            self.client.collection = col_name
+            if len(col_name) > 0:
+                self.client.collection = col_name
             print("NODE key():c "+col_name)
             print("NODE key():k "+new_key)
 
@@ -111,6 +106,7 @@ class Node():
     def filter_data(self, keep_fields=[]):
         """ Takes off all the parameters initiated by the DB starting with "_"
             returning only the used fields, or user's initiated fields.
+            Offline and local filtering.
 
             :param keep_fields: list of fields to keep, be they private or not.
         """
@@ -122,6 +118,7 @@ class Node():
         return pure_data
 
     def delete(self, match_fields=None):
+        """ delete a matching document """
         try:
             cur = self.client.collection.find({"_from": self._data["_from"], "_to": self._data["_to"]})
             if cur.count() == 1:
@@ -144,7 +141,7 @@ class Node():
                 "_".
         """
         if self.client.collection is None:
-            return {}
+            return False 
 
         if "_key" not in self._data and update:
             other_key_fields = {}

@@ -2,53 +2,65 @@ import os
 import copy
 from arango import ArangoClient
 # import arango.exceptions as ohoh
+import dataplug.utils as utils
 
 GRAPH_MARKER = "g--"
 
 DEFAULT_PORT = os.getenv("DATAPLUG_DEFAULT_PORT", 8529)
 DEFAULT_HOST = os.getenv("DATAPLUG_DEFAULT_HOST", "localhost")
+DEFAULT_DOMAIN = os.getenv("DATAPLUG_DEFAULT_DOMAIN", "dataplug")
 
 
 class Client():
 
-    def __init__(self, config={}):
-        """Initiate the connection keeper
+    def __init__(self, domain, collection, db_config={}):
+        """ Initiate a arango client
 
             Arango databases are referred as domains
             Arango collections are referred as collections
         """
         # Local and object initializations
-        self.is_connected = True
+        self._db_config = None
         self._domain = None
         self._collection = None
         self._graph = None
+        self.db = None
 
         # Check client info to the Arango Database
-        self._db_config = self.check_credentials(copy.deepcopy(config))
+        self.db_config = db_config
+        self.check_credentials()
+
+        # Get domain and collection
+        self.connect()
+        if self.is_connected():
+            if isinstance(domain, str) and len(domain) > 0:
+                self.domain = domain
+            if isinstance(collection, str) and len(collection) > 0:
+                self.collection = collection
+
+    def connect(self):
+        if self.db is not None:
+            self.db = None
+            self.domain = None
 
         # Database server connection
-        try:
-            self.client = ArangoClient(
-                protocol=self._db_config['protocol'],
-                host=self._db_config['host'],
-                port=self._db_config['port'],
-                username=self._db_config['username'],
-                password=self._db_config['password'])
-        except Exception as eee:
-            self.is_connected = False
+        self.db = ArangoClient(
+            protocol=self._db_config['protocol'],
+            host=self._db_config['host'],
+            port=self._db_config['port'],
+            username=self._db_config['username'],
+            password=self._db_config['password'])
+        print("Trying to connect res: {}".format(hex(id(self.db))))
 
-        # Checking connection success
-        if self.is_connected:
-
+    def is_connected(self):
+        """ Check if the connection with database is established """
+        status = False
+        if self.db is not None:
             try:
-                self.is_connected = self.client.verify()
+                status = self.db.verify()
             except Exception as eee:
-                self.is_connected = False
-
-            if self.is_connected and "domain" in self._db_config:
-                self.domain = self._db_config["domain"]
-                if "collection" in self._db_config:
-                    self.collection = self._db_config["collection"]
+                status = False
+        return status
 
     @property
     def db_config(self):
@@ -56,7 +68,7 @@ class Client():
 
     @db_config.setter
     def db_config(self, conf):
-        self._db_config = conf
+        self._db_config = copy.deepcopy(conf)
 
     @property
     def domain(self):
@@ -69,15 +81,19 @@ class Client():
             If the domain name has already been used then the domain is
             reloaded from the database else it is created if non-existent.
         """
+        if domain_name is None:
+            self._domain = None
+            return self._domain
+
+        utils.raise_wrong_db_string(domain_name)
         if self._domain is not None:
             if domain_name == self._domain.name:
                 return self._domain
 
-        self._db_config["domain"] = domain_name
-        if domain_name not in self.client.databases():
-            self._domain = self.client.create_database(domain_name)
+        if domain_name not in self.db.databases():
+            self._domain = self.db.create_database(domain_name)
         else:
-            self._domain = self.client.database(domain_name)
+            self._domain = self.db.database(domain_name)
 
         return self._domain
 
@@ -92,21 +108,26 @@ class Client():
 
             :param collection_name: new collection to get, create or check
         """
-        if self._domain:
-            if self._collection:
-                if collection_name == self._collection.name:
-                    return self._collection
+        if collection_name is None:
+            self._collection = None
+            return self._collection
 
-            self._db_config["collection"] = collection_name
-            if collection_name in map(lambda c: c['name'], self._domain.collections()):
-                self._collection = self._domain.collection(collection_name)
-            elif len(collection_name) > 0:
-                is_edge = False
-                if "edge" in self._db_config:
-                    is_edge = self._db_config["edge"]
-                self._collection = self._domain.create_collection(collection_name, edge=is_edge)
-        else:  # no domain is defined
-            self._db_config["collection"] = collection_name
+        utils.raise_wrong_db_string(collection_name)
+
+        if self._domain is None:
+            raise AttributeError("Undefined domain for collection {}".format(collection_name))
+
+        if self._collection:
+            if collection_name == self._collection.name:
+                return self._collection
+
+        if collection_name in map(lambda c: c['name'], self._domain.collections()):
+            self._collection = self._domain.collection(collection_name)
+        else:
+            is_edge = False
+            if "edge" in self._db_config:
+                is_edge = self._db_config["edge"]
+            self._collection = self._domain.create_collection(collection_name, edge=is_edge)
 
         return self._collection
 
@@ -118,6 +139,8 @@ class Client():
     def graph(self, graph_name):
         """ Only creates or reference to an existing graph name
         """
+        utils.raise_empty_string(graph_name)
+
         try:
             if graph_name in map(lambda c: c['name'], self._domain.graphs()):
                 self._graph = self._domain.graph(graph_name)
@@ -134,7 +157,10 @@ class Client():
 
             :param to_cols: array of strings of collection names as destination
             collections
+
         """
+        # TODO
+
         if "collection" in self._db_config:
             self.graph = GRAPH_MARKER+self._db_config["collection"]
         else:
@@ -150,20 +176,20 @@ class Client():
         except Exception as eee:
             pass
 
-    def check_credentials(self, db_config):
+    def check_credentials(self):
         """Fill missing fields with default values
         """
-        if "protocol" not in db_config:
-            db_config["protocol"] = "http"
-        if "host" not in db_config:
-            db_config["host"] = DEFAULT_HOST
-        if "port" not in db_config:
-            db_config["port"] = DEFAULT_PORT
-        if "username" not in db_config:
-            db_config["username"] = ""
-        if "password" not in db_config:
-            db_config["password"] = ""
-        return db_config
+        if "protocol" not in self._db_config:
+            self._db_config["protocol"] = "http"
+        if "host" not in self._db_config:
+            self._db_config["host"] = DEFAULT_HOST
+        if "port" not in self._db_config:
+            self._db_config["port"] = DEFAULT_PORT
+        if "username" not in self._db_config:
+            self._db_config["username"] = ""
+        if "password" not in self._db_config:
+            self._db_config["password"] = ""
+        return self._db_config
 
     def set(self, domain_name, collection_name):
         """ Set a new collection and domain at the same time """
