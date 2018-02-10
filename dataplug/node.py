@@ -28,6 +28,7 @@ class Node():
         """
 
         self.mandatory_features = mandatory_features
+        self._collection_name = ""
 
         if domain == "":
             domain = dataplug.client.DEFAULT_DOMAIN
@@ -37,6 +38,8 @@ class Node():
         self._data = {}
         self.data = data
 
+        # locally extract key information and sets client collection
+        # only if the domain is defined
         current_key = self.key(key)
 
         if current_key != "" and update:
@@ -44,6 +47,16 @@ class Node():
             self.data = self.client.get(current_key)
             # Updating data with eventual new fields from constructor inputs
             self._data.update(data)
+
+    @property
+    def collection_name(self):
+        if self.client.collection is not None:
+            return self.client.collection.name
+        return self._collection_name
+
+    @collection_name.setter
+    def collection_name(self, col_name=""):
+        self._collection_name = col_name
 
     @property
     def data(self):
@@ -76,9 +89,9 @@ class Node():
 
         # Agile local SET
         if len(new_key) > 0:
-            col_name, new_key = dataplug.utils.split_node_id(new_key)
-            if len(col_name) > 0:
-                self.client.collection = col_name
+            self._collection_name, new_key = dataplug.utils.split_node_id(new_key)
+            if len(self._collection_name) > 0 and self.client.domain is not None:
+                    self.client.collection = self._collection_name
 
             self._data["_key"] = new_key
             return self._data["_key"]
@@ -97,8 +110,7 @@ class Node():
         if self.client.collection is not None:
             fk = self.client.collection.name+"/"+self.key()
         else:
-            if "collection" in self.client.db_config:
-                fk = self.client.db_config["collection"]+"/"+self.key()
+            fk = self._collection_name+"/"+self.key()
         return fk
 
     def filter_data(self, keep_fields=[]):

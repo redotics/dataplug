@@ -30,8 +30,8 @@ def test_extract_info():
      domain,
      node_id,
      db_config) = dataplug.utils.extract_info("COL1/A1", None)
-    assert collection == "COL1"
     assert domain == ""
+    assert collection == "COL1"
     assert node_id == "COL1/A1"
     assert len(db_config) == 0  # == {}
 
@@ -39,27 +39,59 @@ def test_extract_info():
      domain,
      node_id,
      db_config) = dataplug.utils.extract_info("COL1/A1", {"domain": "DB1"})
+    assert domain == ""  # because domain should be defined by a client
     assert collection == "COL1"
-    assert domain == "DB1"
     assert node_id == "COL1/A1"
     assert len(db_config) == 1
     assert "domain" in db_config
     assert db_config["domain"] == "DB1"
 
     node_A = dataplug.Node(key="A/1")
+
     (collection,
      domain,
      node_id,
-     db_config) = dataplug.utils.extract_info(node_A, {"domain": "DB1"})
+     db_config) = dataplug.utils.extract_info(node_A, {"domain": "DB1", "blabla":"yipee"})
+    assert domain == ""  # because domain should be defined to a client
     assert collection == "A"
-    assert domain == "DB1"
     assert node_id == "A/1"
-    assert len(db_config) == 1
+    assert len(db_config) == 7  # 5 client credentials + 2 here
     assert "domain" in db_config
     assert db_config["domain"] == "DB1"
+    assert "blabla" in db_config
+    assert db_config["blabla"] == "yipee"
+    assert "host" in db_config  # inserted by credentials check
+    assert db_config["host"] == "localhost"
 
+    node_B = dataplug.Node(domain="DB2", key="B/81")
+    (collection,
+     domain,
+     node_id,
+     db_config) = dataplug.utils.extract_info(node_B, {"domain": "DB1", "blabla":"yipee"})
+    assert domain == ""  # No connection info to establish the creation of a domain
+    assert collection == "B"
+    assert node_id == "B/81"
+    assert len(db_config) == 7
+
+    CONNB = {"protocol": "http", "port": 7144}
+    node_B = dataplug.Node(domain="DB2", key="B/81", client_config=CONNB)
+    (collection,
+     domain,
+     node_id,
+     db_config) = dataplug.utils.extract_info(node_B, {"domain": "DB1", "blabla":"yipee"})
+    assert domain == "DB2"
+    assert collection == "B"
+    assert node_id == "B/81"
+    assert len(db_config) == 7
+    assert "host" in db_config  # inserted by credentials check
+    assert db_config["host"] == "localhost"
+    assert "port" in db_config  # inserted by credentials check
+    assert db_config["port"] == 7144
+    assert "blabla" in db_config
+    assert db_config["blabla"] == "yipee"
 
 def test_creation():
+    domain = "edgetest"
     # only text
     NODEA = "A/111"
     NODEB = "B/222"
@@ -67,10 +99,10 @@ def test_creation():
     node_A = dataplug.Node(key=NODEA)
     node_B = dataplug.Node(key=NODEB)
     # node objects with clients
-    CONN1 = dataplug.Client({"protocol": "http", "port": 7144, "domain": "edgetest"})
-    CONN2 = dataplug.Client({"protocol": "http", "port": 7144, "domain": "edgetest"})
-    node_1 = dataplug.Node(key=NODEA, client=CONN1)
-    node_2 = dataplug.Node(key=NODEB, client=CONN2)
+    CONN1 = {"protocol": "http", "port": 7144, "domain": "edgetest_unused"}
+    CONN2 = {"protocol": "http", "port": 7144}
+    node_1 = dataplug.Node(domain=domain, key=NODEA, client_config=CONN1)
+    node_2 = dataplug.Node(domain=domain, key=NODEB, client_config=CONN2)
     # node objects with clients with defined collection
     #   CONN = dataplug.Client({"protocol": "http", "port": 7144, "collection":"C", "domain": "edgetest"})
     #   node_3 = dataplug.Node(key="333", client=CONN)
@@ -80,34 +112,45 @@ def test_creation():
     #   node_5 = dataplug.Node(key=555, client=CONN)
     #   node_6 = dataplug.Node(key=666, client=CONN)
 
-    def test_one_edge(edge):
+    def test_one_edge(edge, connected=False):
         assert edge.from_collection == "A"
         assert edge.to_collection == "B"
         assert edge.from_id == NODEA
         assert edge.to_id == NODEB
         assert edge.client is not None
-        assert edge.client.db_config["collection"] == "A__B"
+        if connected is True:
+            assert edge.client.domain.name == domain
+            assert edge.client.collection.name == "A__B"
+        else:
+            assert edge.client.domain is None
+            assert edge.client.collection is None
 
     # edge from text/node to text/node
-    edge = dataplug.Edge(NODEA, NODEB)
+    edge = dataplug.Edge(domain, NODEA, NODEB)
     test_one_edge(edge)
 
-    edge = dataplug.Edge(node_A, node_B)
+    edge = dataplug.Edge(domain, node_A, node_B)
     test_one_edge(edge)
 
-    edge = dataplug.Edge(node_1, node_2)
+    edge = dataplug.Edge(domain, node_1, node_2)
+    test_one_edge(edge, connected=True)
+
+    edge = dataplug.Edge(domain, NODEA, node_B)
     test_one_edge(edge)
 
-    edge = dataplug.Edge(NODEA, node_B)
+    edge = dataplug.Edge(domain, node_A, NODEB)
     test_one_edge(edge)
 
-    print("DEBUG ************************************* "+node_A.full_key())
-    edge = dataplug.Edge(node_A, NODEB)
-    test_one_edge(edge)
+    edge = dataplug.Edge(domain, node_1, NODEB)
+    test_one_edge(edge, connected=True)
+
+    edge = dataplug.Edge(domain, NODEA, node_2)
+    test_one_edge(edge, connected=True)
+
+    # --- most useful case for backends
+    edge = dataplug.Edge(domain, NODEA, NODEB, client_config=CONN2)
+    test_one_edge(edge, connected=True)
 
     # edge from edge to edge
     # edge from text to edge
     # edge from edge to text
-    pass
-
-

@@ -6,8 +6,9 @@ EDGE_MARKER = "__"
 def split_node_id(node_id):
     """ split and extract collection name """
     col_name = ""
-    key_only = node_id
+    key_only = ""
     if isinstance(node_id, str):
+        key_only = node_id
         splits = node_id.split("/")
         if len(splits) == 2:
             col_name = splits[0]
@@ -19,11 +20,14 @@ def probe_node_object(this_id):
     """ Get collection name and node full name from node object """
     col_name = ""
     full_id = ""
+    dom_name = ""
     if isinstance(this_id, dataplug.node.Node):
         full_id = this_id.full_key()
         col_name, key_only = split_node_id(full_id)
+        if this_id.client.domain is not None:
+            dom_name = this_id.client.domain.name
 
-    return col_name, full_id
+    return col_name, full_id, dom_name
 
 
 def extract_info(this_id, client_src):
@@ -34,26 +38,21 @@ def extract_info(this_id, client_src):
     config = {}
     dom_name = ""
 
-    col_name, key_only = split_node_id(this_id)
-    if col_name == "":
-        col_name, node_id = probe_node_object(this_id)
+    if isinstance(this_id, dataplug.node.Node):
+        col_name, node_id, dom_name = probe_node_object(this_id)
     else:
-        node_id = this_id
+        col_name, key_only = split_node_id(this_id)
+        if col_name != "":
+            node_id = this_id
 
-    if client_src is None and isinstance(this_id, dataplug.node.Node):
+    if isinstance(this_id, dataplug.node.Node):
         config = copy.deepcopy(this_id.client.db_config)
 
     if client_src is not None:
-
         if isinstance(client_src, dataplug.client.Client):
-            config = copy.deepcopy(client_src.db_config)
+            config.update(client_src.db_config)
         elif isinstance(client_src, dict):
-            config = copy.deepcopy(client_src)
-
-        if "domain" in config:
-            dom_name = config["domain"]
-        if "collection" in config:
-            col_name = config["collection"]
+            config.update(client_src)
 
     return col_name, dom_name, node_id, config
 

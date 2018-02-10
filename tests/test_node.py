@@ -41,6 +41,12 @@ def test_full_key():
 
     node_a.client.delete_collection()
 
+    node_b = dataplug.Node(key=C8+"/otto", data={"A": 3.4},
+                           mandatory_features=["B", "C"])
+    assert node_b.collection_name == C8
+    assert node_b.key() == "otto"
+    assert node_b.full_key() == C8+"/otto"
+
 
 def test_filter_node_data():
     D1 = "dataflexT7"

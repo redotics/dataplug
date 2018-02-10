@@ -50,7 +50,6 @@ class Client():
             port=self._db_config['port'],
             username=self._db_config['username'],
             password=self._db_config['password'])
-        print("Trying to connect res: {}".format(hex(id(self.db))))
 
     def is_connected(self):
         """ Check if the connection with database is established """
@@ -372,7 +371,7 @@ class Client():
 
         req_str += " RETURN "+rwhat
 
-        print("DEBUG ---------- anonymous graph request: "+req_str)
+        # print("DEBUG ---------- anonymous graph request: "+req_str)
 
         # "FOR vertex IN 2..2 OUTBOUND @starter u_o, o_s RETURN vertex",
         result = []
@@ -390,7 +389,6 @@ class Client():
             result = []
 
         for r in result:
-            print(type(r))
             for k in ignore_keys:
                 if k in r:
                     del r[k]

@@ -27,4 +27,6 @@ testpypi: build
 
 test:
 	export DATAPLUG_DEFAULT_PORT=7144
+	@echo "Please run arangod on localhost:7144 with  server.authentication = false"
+	@sleep 4
 	pytest -v tests
