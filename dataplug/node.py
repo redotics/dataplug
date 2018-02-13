@@ -128,7 +128,9 @@ class Node():
         return pure_data
 
     def delete(self):
-        """ delete a document by full_key """
+        """ delete a document by key (full id is deducted 
+            according to the current collection in use in the client.
+        """
         try:
             #self.client.collection.delete(document=self.full_key(), return_old=False)
             self.client.delete(self.key())

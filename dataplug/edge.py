@@ -14,7 +14,8 @@ class Edge(dataplug.node.Node):
                  key="",
                  client_config={},
                  mandatory_features=[],
-                 do_graph=False):
+                 do_graph=False,
+                 no_duplicate=True):
         """ Create and manage an edge between two nodes
 
             An edge is a node with supplementary fields "_from" and "_to". An
@@ -34,6 +35,10 @@ class Edge(dataplug.node.Node):
             :param data: edge-attached information as a dict
             :param client_config: source of configuration to be cloned, a client
                                or a dict
+            :param mandatory_features: cf. dataplug.node.Node
+            :param do_graph: create an arango graph for this edge
+            :param no_duplicate: if True, it will look for a similar edge node
+            and prevent from creating a duplicate when updating this one
         """
         self.from_collection = ""
         self.to_collection = ""
@@ -82,7 +87,13 @@ class Edge(dataplug.node.Node):
 
         if do_graph is True:
             self.client.set_graph([self.from_collection], [self.to_collection])
-        self._data.update({self.FROM: self.from_id, self.TO: self.to_id})
+        edge_data = {self.FROM: self.from_id, self.TO: self.to_id}
+        self._data.update(edge_data)
+
+        if no_duplicate is True:
+            similar_node = self.client.find(edge_data)
+            if "_key" in similar_node:
+                self.key(similar_node["_key"])
 
     def upsave(self):
         """ Update/Save function adapted to edges
@@ -90,5 +101,5 @@ class Edge(dataplug.node.Node):
         super(Edge, self).upsave(keep_private_fields=[self.FROM, self.TO])
 
     def delete(self):
-        super(Edge, self).delete(match_fields=[self.FROM, self.TO])
+        super(Edge, self).delete()
 

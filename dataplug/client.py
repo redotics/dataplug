@@ -214,11 +214,12 @@ class Client():
         """ Return a list of this object
             This transforms the cursor list into a python list
 
-            :param qparams: query parameters like;
-                limit: limit the number of objects returned
-                if any other parameter is given the find method is called
-            :param only_fields: fields key to be selected
-                                in the returned objects
+            :param qparams: query parameters like; limit: limit the number of
+            objects returned if any other parameter is given the find method is
+            called.
+            :param only_fields: fields key to be selected in the returned
+            objects. If empty then all fields are provided but the reserved
+            ones starting with "_".
         """
         listing = []
 
@@ -237,9 +238,14 @@ class Client():
 
         if cursor.count() > 0:
             listing = cursor.batch()
-            for L in listing:
-                for x in [field not in only_fields for field in L]:
-                    L.pop(x, None)
+            if only_fields == []:
+                for L in listing:
+                    for x in [field.startswith("_") for field in L]:
+                        L.pop(x, None)
+            else:
+                for L in listing:
+                    for x in [field not in only_fields for field in L]:
+                        L.pop(x, None)
 
         return listing
 
@@ -314,6 +320,26 @@ class Client():
 
         return info
 
+    def query(self, aql_str, bind_vars=""):
+        """ Execute an AQL query
+
+            :param aql_str: String of AQL commands to be executed
+                            with @bindvars if needed
+            :param bind_vars: Key values dictionnary for AQL bind vars
+        """
+        result = []
+        try:
+            cursor = self._domain.aql.execute(
+                aql_str,
+                bind_vars=bind_vars,
+                count=True
+            )
+            result = [v for v in cursor]
+            cursor.close()
+        except:
+            result = []
+        return result
+
     def graph_outbounds_from(self, from_full_key):
         """
 
@@ -337,8 +363,8 @@ class Client():
         return self.traversal_filter(traversal_results, ignore_full_key=from_full_key)
 
     def traverse(self, from_full_key, edges_list, depth="", what="vertex", rwhat="", direction="OUTBOUND", ignore_keys=["_key", "_rev"]):
-        """ Anonymous Traversal function using anonymous graph, so direct use
-            of list of edges
+        """ Anonymous simplistic traversal function using anonymous graph, so
+            with direct use of a list of edges
 
             :param from_full_key: ID of the starting node point
             :param edges_list: list of edge collections to traverse
@@ -371,8 +397,6 @@ class Client():
 
         req_str += " RETURN "+rwhat
 
-        # print("DEBUG ---------- anonymous graph request: "+req_str)
-
         # "FOR vertex IN 2..2 OUTBOUND @starter u_o, o_s RETURN vertex",
         result = []
         try:
@@ -396,6 +420,8 @@ class Client():
         return result
 
     def traversal_filter(self, traversal_dict, ignore_full_key=[], vertices_field="vertices", list_name="list"):
+        """ Filter traversal output in a more simple customized dict
+        """
         output = {}
         output[list_name] = []
         if vertices_field not in traversal_dict:
