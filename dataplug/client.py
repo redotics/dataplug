@@ -206,9 +206,10 @@ class Client():
             return False
         try:
             self._collection.unload()
+            self._domain.delete_collection(self._collection.name, ignore_missing=True)
         except Exception as eee:
-            pass
-        return self._domain.delete_collection(self._collection.name, ignore_missing=True)
+            return False
+        return True
 
     def all(self, qparams={}, only_fields=["_id"]):
         """ Return a list of this object
