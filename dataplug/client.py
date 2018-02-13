@@ -116,7 +116,7 @@ class Client():
         if self._domain is None:
             raise AttributeError("Undefined domain for collection {}".format(collection_name))
 
-        if self._collection:
+        if self._collection is not None:
             if collection_name == self._collection.name:
                 return self._collection
 
