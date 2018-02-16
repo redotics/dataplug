@@ -235,7 +235,7 @@ class Client():
             if "limit" in qparams:
                 limit = qparams["limit"]
             # --- Just select all documents in this collection
-            cursor = self.collection.all(limit=limit)
+            cursor = self._collection.all(limit=limit)
 
         if cursor.count() > 0:
             listing = cursor.batch()
@@ -321,7 +321,7 @@ class Client():
 
         return info
 
-    def query(self, aql_str, bind_vars=""):
+    def query(self, aql_str, bind_vars={}):
         """ Execute an AQL query
 
             :param aql_str: String of AQL commands to be executed
@@ -337,7 +337,8 @@ class Client():
             )
             result = [v for v in cursor]
             cursor.close()
-        except:
+        except Exception as eee:
+            print(eee)
             result = []
         return result
 
