@@ -159,6 +159,7 @@ def test_update():
     domain = "edgonomy"
     NODEA = "R/111"
     NODEB = "Q/222"
+    NODEC = "Q/333"
     CONN = {"protocol": "http", "port": 7144}
 
     node_1 = dataplug.Node(domain=domain, key=NODEA, client_config=CONN)
@@ -184,3 +185,10 @@ def test_update():
     assert edge2.data["C"] == 67
     assert edge2.data["_from"] == NODEA
     assert edge2.data["_to"] == NODEB
+
+    # sync has no impact on non-pre-existing objects
+    edge3 = dataplug.Edge(domain, NODEA, NODEC, client_config=CONN)
+    edge3.sync()
+    assert edge3.data["_from"] == NODEA
+    assert edge3.data["_to"] == NODEC
+    assert len(edge3.data) == 2
