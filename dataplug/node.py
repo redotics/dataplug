@@ -42,11 +42,8 @@ class Node():
         # only if the domain is defined
         current_key = self.key(key)
 
-        if current_key != "" and update:
-            # Checking in data from provided key and checking mandatory fields
-            self.data = self.client.get(current_key)
-            # Updating data with eventual new fields from constructor inputs
-            self._data.update(data)
+        if update:
+            self.sync(data)
 
     @property
     def collection_name(self):
@@ -100,6 +97,14 @@ class Node():
         if "_key" in self._data:
             return self._data["_key"]
         return ""
+
+    def sync(self, data={}):
+        current_key = self.key()
+        if current_key != "":
+            # Checking in data from provided key and checking mandatory fields
+            self.data = self.client.get(current_key)
+            # Updating data with eventual new fields from constructor inputs
+            self._data.update(data)
 
     def full_key(self):
         """ Returns the node id, reconstructed with available information
@@ -200,7 +205,7 @@ class Node():
                         self.key(newbody["_key"])
         except Exception as eee:
             print(eee)
-            print("ERROR: when saving in upsave() for "+self.client.collection.name)
+            print("ERROR: when saving in upsave() in "+self.client.collection.name)
             return False
 
         return True

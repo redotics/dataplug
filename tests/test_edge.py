@@ -154,3 +154,33 @@ def test_creation():
     # edge from edge to edge
     # edge from text to edge
     # edge from edge to text
+
+def test_update():
+    domain = "edgonomy"
+    NODEA = "R/111"
+    NODEB = "Q/222"
+    CONN = {"protocol": "http", "port": 7144}
+
+    node_1 = dataplug.Node(domain=domain, key=NODEA, client_config=CONN)
+    node_1.upsave()
+    node_2 = dataplug.Node(domain=domain, key=NODEB, client_config=CONN)
+    node_2.upsave()
+
+    edge = dataplug.Edge(domain, NODEA, NODEB, client_config=CONN)
+    edge.add_field("A", 34.5).add_field("C", 67)
+    edge.upsave()
+
+    edge2 = dataplug.Edge(domain, NODEA, NODEB, client_config=CONN)
+
+    assert "A" not in edge2.data
+    assert "C" not in edge2.data
+
+    edge2.sync()
+
+    assert "A" in edge2.data
+    assert "C" in edge2.data
+
+    assert edge2.data["A"] == 34.5
+    assert edge2.data["C"] == 67
+    assert edge2.data["_from"] == NODEA
+    assert edge2.data["_to"] == NODEB
