@@ -192,3 +192,7 @@ def test_update():
     assert edge3.data["_from"] == NODEA
     assert edge3.data["_to"] == NODEC
     assert len(edge3.data) == 2
+
+    # check edge3 was not created on the database (no calls to upsave)
+    search_result = edge3.client.find(edge3.data)
+    assert len(search_result) == 0
