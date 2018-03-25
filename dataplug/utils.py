@@ -35,8 +35,10 @@ def extract_info(this_id, client_src):
     name or node object
 
     """
-    config = {}
+    col_name = ""
     dom_name = ""
+    node_id = ""
+    config = {}
 
     if isinstance(this_id, dataplug.node.Node):
         col_name, node_id, dom_name = probe_node_object(this_id)
