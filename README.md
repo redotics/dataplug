@@ -10,8 +10,8 @@ Main requirements for devs
 ==========================
 
 
-	+ [Python driver for Arango](https://github.com/joowani/python-arango)
-	+ [ArangoDB](https://www.arangodb.com) version > 3.2
+ + [Python driver for Arango](https://github.com/joowani/python-arango)
+ + [ArangoDB](https://www.arangodb.com) version > 3.2
 	    A multi-model no-sql graph database
 
 
@@ -19,13 +19,13 @@ Main requirements for devs
 Installation
 ============
 
-'''
-pip install dataplug
-'''
+```
+red@spaceport# pip install dataplug
+```
 
 Testing
 =======
 
-'''
-pytest -v tests
-'''
+```
+red@spaceport# pytest -v tests
+```
