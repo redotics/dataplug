@@ -114,19 +114,22 @@ class Client():
         utils.raise_wrong_db_string(collection_name)
 
         if self._domain is None:
-            raise AttributeError("Undefined domain for collection {}".format(collection_name))
+            raise AttributeError("Undefined domain for collection {}"
+                                 .format(collection_name))
 
         if self._collection is not None:
             if collection_name == self._collection.name:
                 return self._collection
 
-        if collection_name in map(lambda c: c['name'], self._domain.collections()):
+        if collection_name in \
+           map(lambda c: c['name'], self._domain.collections()):
             self._collection = self._domain.collection(collection_name)
         else:
             is_edge = False
             if "edge" in self._db_config:
                 is_edge = self._db_config["edge"]
-            self._collection = self._domain.create_collection(collection_name, edge=is_edge)
+            self._collection = self._domain.create_collection(collection_name,
+                                                              edge=is_edge)
 
         return self._collection
 
@@ -206,7 +209,8 @@ class Client():
             return False
         try:
             self._collection.unload()
-            self._domain.delete_collection(self._collection.name, ignore_missing=True)
+            self._domain.delete_collection(self._collection.name,
+                                           ignore_missing=True)
         except Exception as eee:
             return False
         return True
@@ -227,7 +231,7 @@ class Client():
         cursor = None
 
         if ("limit" in qparams and len(qparams) > 1) \
-        or ("limit" not in qparams and len(qparams) > 0):
+           or ("limit" not in qparams and len(qparams) > 0):
             # then we have query parameters to deal with
             cursor = self.find(self.qparams_to_dict(qparams))
         else:
@@ -287,7 +291,9 @@ class Client():
             return rinfo
 
         try:
-            rinfo = self.collection.delete(document=key, ignore_missing=True, return_old=False)
+            rinfo = self.collection.delete(document=key,
+                                           ignore_missing=True,
+                                           return_old=False)
             if rinfo is not False:
                 rinfo = True
         except Exception as eee:
@@ -329,6 +335,10 @@ class Client():
             :param bind_vars: Key values dictionnary for AQL bind vars
         """
         result = []
+
+        if not self.is_connected():
+            return result
+
         try:
             cursor = self._domain.aql.execute(
                 aql_str,
@@ -340,12 +350,14 @@ class Client():
         except Exception as eee:
             print(eee)
             result = []
+
         return result
 
     def graph_outbounds_from(self, from_full_key):
-        """
+        """ Get outbounds nodes from a full node 'collection/key'
 
-            :param from_full_key: full id of the node from which we can the traverse outbound
+            :param from_full_key: full id of the node from which we can the
+            traverse outbound
         """
         if from_full_key == "" or self._graph is None:
             return {}
@@ -389,7 +401,7 @@ class Client():
         # Building request string
         req_str = "FOR "+what+" IN "+depth+" "+direction+" @starter "
 
-        is_first_edge= True
+        is_first_edge = True
         for edge in edges_list:
             if is_first_edge:
                 is_first_edge = False
@@ -418,16 +430,21 @@ class Client():
             for k in ignore_keys:
                 if k in r:
                     del r[k]
-                    
+
         return result
 
-    def traversal_filter(self, traversal_dict, ignore_full_key=[], vertices_field="vertices", list_name="list"):
+    def traversal_filter(self,
+                         traversal_dict,
+                         ignore_full_key=[],
+                         vertices_field="vertices",
+                         list_name="list"):
         """ Filter traversal output in a more simple customized dict
         """
         output = {}
         output[list_name] = []
         if vertices_field not in traversal_dict:
-            print("ERROR traversal results does not contain field: "+vertices_field)
+            print("ERROR traversal results does not contain field: "
+                  + vertices_field)
             print(traversal_dict)
             return output
 
@@ -435,5 +452,5 @@ class Client():
             if "_id" in vert:
                 if vert["_id"] not in ignore_full_key:
                     output[list_name].append(self.clean_dict(vert))
-        return output
 
+        return output
