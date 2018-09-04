@@ -145,7 +145,7 @@ class Node():
     def upsave(self, keep_private_fields=[], update=False):
         """ Save or update an category document
 
-            :param by_similarity: if True, this function will try to
+            :param update: if True, this function will try to
                 find a similar object in the database according to the
                 mandatory_features, only used if the key is not provided. It
                 might be possible you want to create another object with
