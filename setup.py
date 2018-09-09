@@ -16,7 +16,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    version="1.1.1",
+    version="2.0.0",
     name="dataplug",
     description="Schemaless, NoSQL, multi-model data interactions on top ArangoDB",
     long_description=long_description,
