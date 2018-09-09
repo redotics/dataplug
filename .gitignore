@@ -49,6 +49,7 @@ coverage.xml
 *.cover
 .hypothesis/
 tests/dev_*
+.pytest*
 
 # Translations
 *.mo
