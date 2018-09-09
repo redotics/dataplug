@@ -9,7 +9,7 @@ GRAPH_MARKER = "g--"
 DEFAULT_PORT = os.getenv("DATAPLUG_DEFAULT_PORT", 8529)
 DEFAULT_HOST = os.getenv("DATAPLUG_DEFAULT_HOST", "localhost")
 DEFAULT_DOMAIN = os.getenv("DATAPLUG_DEFAULT_DOMAIN", "dataplug")
-
+DEFAULT_SYSTEM_DB = "_system"
 
 class Client():
 
@@ -24,7 +24,8 @@ class Client():
         self._domain = None
         self._collection = None
         self._graph = None
-        self.db = None
+        self._client = None
+        self._system = None
 
         # Check client info to the Arango Database
         self.db_config = db_config
@@ -39,24 +40,32 @@ class Client():
                 self.collection = collection
 
     def connect(self):
-        if self.db is not None:
-            self.db = None
+        """ It connects to the database using the server config
+            And it establish link with the _system database
+            to be able to create other databases and collections
+        """
+        if self._system is not None:
+            self._system = None
             self.domain = None
 
         # Database server connection
-        self.db = ArangoClient(
+        self._client = ArangoClient(
             protocol=self._db_config['protocol'],
             host=self._db_config['host'],
-            port=self._db_config['port'],
-            username=self._db_config['username'],
-            password=self._db_config['password'])
+            port=self._db_config['port'])
+
+        # connects to default system database u"_system"
+        self._system = self._client.db(username=self._db_config["username"],
+                                       password=self._db_config["password"])
 
     def is_connected(self):
         """ Check if the connection with database is established """
         status = False
-        if self.db is not None:
+        if self._system is not None:
             try:
-                status = self.db.verify()
+                # verify() function does not exist anymore
+                # so here using an indirect way.
+                status = self._system.has_database(DEFAULT_SYSTEM_DB)
             except Exception as eee:
                 status = False
         return status
@@ -70,15 +79,25 @@ class Client():
         self._db_config = copy.deepcopy(conf)
 
     @property
+    def db(self):
+        """ Returns systemm db to do deletes or other actions """
+        return self._system
+
+    @property
     def domain(self):
+        """ Returns the arango domain handler
+        """
         return self._domain
 
     @domain.setter
     def domain(self, domain_name):
-        """ Sets the current domain object
+        """ Sets the current domain object and returns it
 
             If the domain name has already been used then the domain is
             reloaded from the database else it is created if non-existent.
+
+            You won't be able to create databases if you are not a "_system"
+            database authorized user.
         """
         if domain_name is None:
             self._domain = None
@@ -86,18 +105,23 @@ class Client():
 
         utils.raise_wrong_db_string(domain_name)
         if self._domain is not None:
-            if domain_name == self._domain.name:
+            if domain_name == self._domain.db_name:
                 return self._domain
 
-        if domain_name not in self.db.databases():
-            self._domain = self.db.create_database(domain_name)
-        else:
-            self._domain = self.db.database(domain_name)
+        if domain_name not in self._system.databases():
+            self._system.create_database(domain_name)
+
+        # getting the defined domain.
+        self._domain = self._client.db(domain_name,
+                                       username=self._db_config["username"],
+                                       password=self._db_config["password"])
 
         return self._domain
 
     @property
     def collection(self):
+        """ Returns the arango collection handler
+        """
         return self._collection
 
     @collection.setter

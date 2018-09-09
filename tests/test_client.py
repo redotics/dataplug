@@ -35,9 +35,11 @@ def test_connection():
     assert CONN.domain.name == D1
     assert CONN.db.delete_database(D1, ignore_missing=True) is True
     assert CONN.domain.name == D1
-    with pytest.raises(arango.exceptions.ServerConnectionError):
-        CONN.domain.verify()
+
+    #with pytest.raises(arango.exceptions.ServerConnectionError):
+    #    CONN.is_connected()
     assert CONN.is_connected() is True
+
     # Testing when graph is None
     assert CONN.graph_outbounds_from("nonexistant/123Node") == {}
     assert CONN.graph_outbounds_from("") == {}
