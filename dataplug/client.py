@@ -251,7 +251,6 @@ class Client():
         # except ohoh.DocumentRevisionError as eee:
         # except ohoh.DocumentGetError as eee:
         except Exception as eee:
-            print("DEBUG exception at get() for "+str(key))
             info = {}
 
         return info
