@@ -40,10 +40,6 @@ def test_connection():
     #    CONN.is_connected()
     assert CONN.is_connected() is True
 
-    # Testing when graph is None
-    assert CONN.graph_outbounds_from("nonexistant/123Node") == {}
-    assert CONN.graph_outbounds_from("") == {}
-
 
 def test_create_collections():
     D1 = "dataflex"

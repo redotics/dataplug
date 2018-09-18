@@ -23,7 +23,6 @@ class Client():
         self._db_config = None
         self._domain = None
         self._collection = None
-        self._graph = None
         self._client = None
         self._system = None
 
@@ -157,51 +156,6 @@ class Client():
 
         return self._collection
 
-    @property
-    def graph(self):
-        return self._graph
-
-    @graph.setter
-    def graph(self, graph_name):
-        """ Only creates or reference to an existing graph name
-        """
-        utils.raise_empty_string(graph_name)
-
-        try:
-            if graph_name in map(lambda c: c['name'], self._domain.graphs()):
-                self._graph = self._domain.graph(graph_name)
-            else:
-                self._graph = self._domain.create_graph(graph_name)
-        except Exception as eee:
-            pass
-
-    def set_graph(self, from_cols, to_cols):
-        """ Set graph with an edge definition
-
-            :param from_cols: array of strings of collection names as source
-            collections
-
-            :param to_cols: array of strings of collection names as destination
-            collections
-
-        """
-        # TODO
-
-        if "collection" in self._db_config:
-            self.graph = GRAPH_MARKER+self._db_config["collection"]
-        else:
-            # TODO: setup a name with collections' prefixes extraction
-            self.graph = GRAPH_MARKER+"noname"
-
-        try:
-            self._collection = self.graph.create_edge_definition(
-                name=self.collection_name,
-                from_collections=from_cols,
-                to_collections=to_cols
-            )
-        except Exception as eee:
-            pass
-
     def check_credentials(self):
         """Fill missing fields with default values
         """
@@ -251,30 +205,31 @@ class Client():
             ones starting with "_".
         """
         listing = []
+        limit = None
+        if "limit" in qparams:
+            limit = qparams["limit"]
 
-        cursor = None
 
         if ("limit" in qparams and len(qparams) > 1) \
            or ("limit" not in qparams and len(qparams) > 0):
-            # then we have query parameters to deal with
-            cursor = self.find(self.qparams_to_dict(qparams))
+            # then we have query parameters to search with.
+            listing = self.find(self.qparams_to_dict(qparams), limit=limit)
         else:
-            limit = None
-            if "limit" in qparams:
-                limit = qparams["limit"]
             # --- Just select all documents in this collection
+            cursor = None
             cursor = self._collection.all(limit=limit)
+            if cursor.count() > 0:
+                listing = cursor.batch()
 
-        if cursor.count() > 0:
-            listing = cursor.batch()
-            if only_fields == []:
-                for L in listing:
-                    for x in [field.startswith("_") for field in L]:
-                        L.pop(x, None)
-            else:
-                for L in listing:
-                    for x in [field not in only_fields for field in L]:
-                        L.pop(x, None)
+        # Filtering the listing
+        if only_fields == []:
+            for L in listing:
+                for x in [field.startswith("_") for field in L]:
+                    L.pop(x, None)
+        else:
+            for L in listing:
+                for x in [field not in only_fields for field in L]:
+                    L.pop(x, None)
 
         return listing
 
@@ -296,6 +251,7 @@ class Client():
         # except ohoh.DocumentRevisionError as eee:
         # except ohoh.DocumentGetError as eee:
         except Exception as eee:
+            print("DEBUG exception at get() for "+str(key))
             info = {}
 
         return info
@@ -329,27 +285,28 @@ class Client():
     def qparams_to_dict(self, qparams):
         return qparams
 
-    def find(self, sdict):
+    def find(self, sdict, skip=None, limit=None):
         """ Simple search that returns the dict for the found object information
+            or all occurences of objects with sdict fields descriptions
 
             :param sdict: search dictionnary
-            :return: the dictionary of the found data
+            :return: a list of dictionaries of a found node's data 
         """
-        info = {}
+        listing = []
 
         if self._domain is None or self._collection is None or sdict == {}:
-            return info
+            return listing 
 
         try:
-            cur = self.collection.find(sdict)
+            cur = self.collection.find(sdict, skip, limit)
             if cur.count() == 1:
-                info = cur.next()
+                listing = [cur.next()]
             else:
-                info = {}
+                listing = [c for c in cur]
         except Exception as eee:
-            info = {}
+            listing = []
 
-        return info
+        return listing
 
     def query(self, aql_str, bind_vars={}):
         """ Execute an AQL query
@@ -376,29 +333,6 @@ class Client():
             result = []
 
         return result
-
-    def graph_outbounds_from(self, from_full_key):
-        """ Get outbounds nodes from a full node 'collection/key'
-
-            :param from_full_key: full id of the node from which we can the
-            traverse outbound
-        """
-        if from_full_key == "" or self._graph is None:
-            return {}
-
-        traversal_results = {}
-        try:
-            traversal_results = self._graph.traverse(
-                start_vertex=from_full_key,
-                direction="outbound",
-                strategy="bfs",
-                edge_uniqueness="global",
-                vertex_uniqueness="global",
-            )
-        except:
-            print("Error:get_outbounds_from: could not traverse graph")
-
-        return self.traversal_filter(traversal_results, ignore_full_key=from_full_key)
 
     def traverse(self, from_full_key, edges_list, depth="", what="vertex", rwhat="", direction="OUTBOUND", ignore_keys=["_key", "_rev"]):
         """ Anonymous simplistic traversal function using anonymous graph, so
@@ -457,24 +391,3 @@ class Client():
 
         return result
 
-    def traversal_filter(self,
-                         traversal_dict,
-                         ignore_full_key=[],
-                         vertices_field="vertices",
-                         list_name="list"):
-        """ Filter traversal output in a more simple customized dict
-        """
-        output = {}
-        output[list_name] = []
-        if vertices_field not in traversal_dict:
-            print("ERROR traversal results does not contain field: "
-                  + vertices_field)
-            print(traversal_dict)
-            return output
-
-        for vert in traversal_dict[vertices_field]:
-            if "_id" in vert:
-                if vert["_id"] not in ignore_full_key:
-                    output[list_name].append(self.clean_dict(vert))
-
-        return output
