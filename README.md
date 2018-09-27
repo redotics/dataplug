@@ -65,6 +65,24 @@ edgeAB.upsave()
 
 ```
 
+Update your node data
+=====================
+
+ - That replaces data totally with newdata dictionnary:
+ ```
+    node.data = newdata
+ ```
+
+ - That searches of similar node in the database and updates/adds data:
+ ```
+    node.sync()
+ ```
+
+ - To append/update data with newdata use:
+ ```
+    node.data.update(newdata)
+ ```
+
 Testing
 =======
 
