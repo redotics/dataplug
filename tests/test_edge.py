@@ -171,6 +171,8 @@ def test_update():
     edge.add_field("A", 34.5).add_field("C", 67)
     edge.upsave()
 
+    assert "_key" in edge.data
+
     edge2 = dataplug.Edge(domain, NODEA, NODEB, client_config=CONN)
 
     assert "A" not in edge2.data
@@ -178,6 +180,7 @@ def test_update():
 
     edge2.sync()
 
+    assert "_from" in edge2.data
     assert "A" in edge2.data
     assert "C" in edge2.data
 

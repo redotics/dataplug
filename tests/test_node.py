@@ -85,6 +85,8 @@ def test_node_upsave():
                            collection=C5,
                            client_config=client_config,
                            mandatory_features=["A", "B", "C"])
+    node_nokey1.client.delete_collection()
+
     node_nokey2 = dataplug.Node(
                            data={"A": 1.41, "more": "is_less"},
                            collection=C5,
