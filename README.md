@@ -20,14 +20,14 @@ Dataplug supports the last updates of Arango and its python driver.
 Installation
 ============
 
-```
+```bash
 pip install dataplug
 ```
 
 Quick start
 ===========
 
-```
+```python
 import dataplug
 
 server_config = { "host":"localhost",
