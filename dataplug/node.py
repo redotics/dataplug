@@ -16,8 +16,8 @@ class Node():
                  update=False):
         """
             :param key: full or only-key part part in id "collection_name/key"
-                        If the only-key is givent the collection information
-                        should appear in the given client.
+                        If the key only is given, the collection parameter 
+                        should be provided.
                         Take precedence on an eventual KEY field.
             :param data: dictionnary of data
             :param client: dependency injection for database client
@@ -183,6 +183,7 @@ class Node():
                 mandatory_features, only used if the key is not provided. It
                 might be possible you want to create another object with
                 the same data in this case set update to False.
+                And remove eventual _key and _id fields.
             :param keep_private_fields: it will keep only the selected private
                 fields. Useful to keep reserved database fields starting with
                 "_".

@@ -159,7 +159,7 @@ class Client():
     def check_credentials(self):
         """Fill missing fields with default values
         """
-        if "protocol" not in self._db_config:
+        if "protocol" not in self._db_config or not isinstance(self._db_config["protocol"], str):
             self._db_config["protocol"] = "http"
         if "host" not in self._db_config:
             self._db_config["host"] = DEFAULT_HOST
