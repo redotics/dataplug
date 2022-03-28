@@ -49,9 +49,11 @@ class Client():
 
         # Database server connection
         self._client = ArangoClient(
-            protocol=self._db_config['protocol'],
-            host=self._db_config['host'],
-            port=self._db_config['port'])
+            hosts= str(self._db_config['protocol'])
+                + "://"
+                + str(self._db_config['host'])
+                + ":"
+                + str(self._db_config['port']))
 
         # connects to default system database u"_system"
         self._system = self._client.db(username=self._db_config["username"],
