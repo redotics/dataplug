@@ -16,9 +16,10 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    version="2.1.0",
+    version="3.0.0",
     name="dataplug",
     description="Schemaless, NoSQL, multi-model data interactions on top ArangoDB",
+    long_description_content_type="text/markdown",
     long_description=long_description,
     url="https://github.com/redsharpbyte/dataplug",
     license="MIT",
@@ -31,7 +32,6 @@ setup(
     packages=find_packages(exclude=["tests", "docs", "backends"]),
     keywords="schemaless, no-sql, multi-model, data, graph, databasea",
     classifiers=[
-        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License"
