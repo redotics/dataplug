@@ -6,14 +6,7 @@ sys.path.insert(
     os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import dataplug
 import dataplug.utils
-
-
-"""
-    Use database parameters:
-        - port 7144
-        - no authentication
-
-"""
+import testconfig as cfg
 
 
 def test_edge_naming():
@@ -73,7 +66,7 @@ def test_extract_info():
     assert node_id == "B/81"
     assert len(db_config) == 7
 
-    CONNB = {"protocol": "http", "port": 7144}
+    CONNB = {"protocol": "http", "port": cfg.TEST_PORT, "username":cfg.TEST_USER, "password":cfg.TEST_PASSWORD}
     node_B = dataplug.Node(domain="DB2", key="B/81", client_config=CONNB)
     (collection,
      domain,
@@ -86,7 +79,7 @@ def test_extract_info():
     assert "host" in db_config  # inserted by credentials check
     assert db_config["host"] == "localhost"
     assert "port" in db_config  # inserted by credentials check
-    assert db_config["port"] == 7144
+    assert db_config["port"] == cfg.TEST_PORT
     assert "blabla" in db_config
     assert db_config["blabla"] == "yipee"
 
@@ -99,18 +92,10 @@ def test_creation():
     node_A = dataplug.Node(key=NODEA)
     node_B = dataplug.Node(key=NODEB)
     # node objects with clients
-    CONN1 = {"protocol": "http", "port": 7144, "domain": "edgetest_unused"}
-    CONN2 = {"protocol": "http", "port": 7144}
+    CONN1 = {"protocol": "http", "port": cfg.TEST_PORT, "domain": "edgetest_unused", "username":cfg.TEST_USER, "password":cfg.TEST_PASSWORD}
+    CONN2 = {"protocol": "http", "port": cfg.TEST_PORT, "username":cfg.TEST_USER, "password":cfg.TEST_PASSWORD}
     node_1 = dataplug.Node(domain=domain, key=NODEA, client_config=CONN1)
     node_2 = dataplug.Node(domain=domain, key=NODEB, client_config=CONN2)
-    # node objects with clients with defined collection
-    #   CONN = dataplug.Client({"protocol": "http", "port": 7144, "collection":"C", "domain": "edgetest"})
-    #   node_3 = dataplug.Node(key="333", client=CONN)
-    #   node_4 = dataplug.Node(key="444", client=CONN)
-    #   # node objects with clients with defined collection
-    #   CONN = dataplug.Client({"protocol": "http", "port": 7144, "collection":"C", "domain": "edgetest"})
-    #   node_5 = dataplug.Node(key=555, client=CONN)
-    #   node_6 = dataplug.Node(key=666, client=CONN)
 
     def test_one_edge(edge, connected=False):
         assert edge.from_collection == "A"
@@ -160,7 +145,7 @@ def test_update():
     NODEA = "R/111"
     NODEB = "Q/222"
     NODEC = "Q/333"
-    CONN = {"protocol": "http", "port": 7144}
+    CONN = {"protocol": "http", "port": cfg.TEST_PORT, "username":cfg.TEST_USER, "password":cfg.TEST_PASSWORD}
 
     node_1 = dataplug.Node(domain=domain, key=NODEA, client_config=CONN)
     node_1.upsave()

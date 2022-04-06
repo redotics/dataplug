@@ -5,14 +5,7 @@ sys.path.insert(
     0,
     os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import dataplug
-
-
-"""
-    Use database parameters:
-        - port 7144
-        - no authentication
-
-"""
+import testconfig as cfg
 
 
 def test_check_mandatory_fields():
@@ -30,7 +23,7 @@ def test_check_mandatory_fields():
 
 def test_full_key():
     C8 = "node_test"
-    client_config = {"protocol": "http", "port": 7144}
+    client_config = {"protocol": "http", "port": cfg.TEST_PORT, "username":cfg.TEST_USER, "password":cfg.TEST_PASSWORD}
 
     node_a = dataplug.Node(data={"A": 3.4, "_key": "albert"},
                            client_config=client_config,
@@ -51,7 +44,7 @@ def test_full_key():
 def test_filter_node_data():
     D1 = "dataflexT7"
     C1 = "fip"
-    client_config = {"protocol": "http", "port": 7144}
+    client_config = {"protocol": "http", "port": cfg.TEST_PORT, "username":cfg.TEST_USER, "password":cfg.TEST_PASSWORD}
 
     node_a = dataplug.Node(D1, C1, data={"A": 3.4, "_key": "albert"},
                            client_config=client_config,
@@ -77,7 +70,7 @@ def test_filter_node_data():
 
 
 def test_node_upsave():
-    client_config = {"protocol": "http", "port": 7144}
+    client_config = {"protocol": "http", "port": cfg.TEST_PORT, "username":cfg.TEST_USER, "password":cfg.TEST_PASSWORD}
     C5="users"
 
     node_nokey1 = dataplug.Node(
@@ -132,7 +125,7 @@ def test_node_upsave():
 
 
 def test_delete():
-    client_config = {"protocol": "http", "port": 7144}
+    client_config = {"protocol": "http", "port": cfg.TEST_PORT, "username":cfg.TEST_USER, "password":cfg.TEST_PASSWORD}
     C5="users"
 
     node_nokey1 = dataplug.Node(

@@ -1,18 +1,15 @@
 import os
 import sys
-import arango
 sys.path.insert(
     0,
     os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import dataplug
-
-
-TEST_DOM="test_dataplug"
+import testconfig as cfg
 
 
 def test_graph():
     # Port is incorrect
-    client_config = {"protocol": "http", "port": 7144, "domain": TEST_DOM}
+    client_config = {"protocol": "http", "port": cfg.TEST_PORT, "domain": cfg.TEST_DOM}
     graph_o = dataplug.Graph(client_config["domain"], client_config=client_config)
 
     # Testing when graph is None

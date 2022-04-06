@@ -18,9 +18,9 @@ class Graph():
 
         """
 
-        self._graph = None
+        self.graph = None
         self._db_config = client_config
-        self._client = dataplug.Client(domain=domain,
+        self.client = dataplug.Client(domain=domain,
                                        collection="",
                                        db_config=client_config)
 
@@ -30,14 +30,15 @@ class Graph():
         utils.raise_empty_string(graph_name)
 
         try:
-            if graph_name in map(lambda c: c['name'], self._domain.graphs()):
-                self._graph = self._client.db.graph(graph_name)
-            else:
-                self._graph = self._client.db.create_graph(graph_name)
+            if not self.client.domain.has_graph(graph_name):
+                self.graph = self.client.domain.create_graph(graph_name)
         except Exception as eee:
+            self.graph = None
+            print(eee)
+            print("OOps could not create graph")
             pass
 
-    def set_graph(self, from_cols, to_cols):
+    def set_graph(self, from_cols, to_cols, gname="default"):
         """ Set graph with an edge definition
 
             :param from_cols: array of strings of collection names as source
@@ -47,35 +48,42 @@ class Graph():
             collections
 
         """
-        # TODO
+        self.graph = None
+        # TODO: have a utils function for this to be uniform
+        graph_name = utils.GRAPH_MARKER + gname
+        #from_cols + "_" + to_cols
 
-        if "collection" in self._db_config:
-            self.graph = GRAPH_MARKER+self._db_config["collection"]
+        if self.client.domain is None:
+            return self.graph
+
+        if self.client.domain.has_graph(graph_name):
+            self.graph = self.client.domain.graph(graph_name)
+            return self.graph
         else:
-            # TODO: setup a name with collections' prefixes extraction
-            self.graph = GRAPH_MARKER+"noname"
+            self.create_graph(graph_name)
 
-        try:
-            self._collection = self.graph.create_edge_definition(
-                name=self.collection_name,
-                from_collections=from_cols,
-                to_collections=to_cols
-            )
-        except Exception as eee:
-            pass
+        # set edge definition
+        from_cols.extend(to_cols)
+        edge_def = self.graph.create_edge_definition(
+            edge_collection=utils.edge_naming(from_cols)[0],
+            from_vertex_collections=from_cols,
+            to_vertex_collections=to_cols
+        )
 
-    def outbounds_from_node(self, from_full_key, output_json=False):
+        return self.graph
+
+    def outbounds_from_node(self, from_full_key, output_json=False, list_name="list"):
         """ Get outbounds nodes from a full node 'collection/key'
 
             :param from_full_key: full id of the node from which we can the
             traverse outbound
         """
-        if from_full_key == "" or self._graph is None:
+        if from_full_key == "" or self.graph is None:
             return {}
 
         traversal_results = {}
         try:
-            traversal_results = self._graph.traverse(
+            traversal_results = self.graph.traverse(
                 start_vertex=from_full_key,
                 direction="outbound",
                 strategy="bfs",
@@ -85,7 +93,9 @@ class Graph():
         except:
             print("Error:get_outbounds_from: could not traverse graph")
 
-        output_dict = self.traversal_filter(traversal_results, ignore_full_key=from_full_key)
+        output_dict = self.traversal_filter(traversal_results,
+                                            ignore_full_key=from_full_key,
+                                            list_name=list_name)
 
         if output_json==False:
             return output_dict
@@ -116,6 +126,6 @@ class Graph():
         for vert in traversal_dict[vertices_field]:
             if "_id" in vert:
                 if vert["_id"] not in ignore_full_key:
-                    output[list_name].append(self.clean_dict(vert))
+                    output[list_name].append(vert)
 
         return output

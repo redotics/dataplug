@@ -4,8 +4,6 @@ from arango import ArangoClient
 # import arango.exceptions as ohoh
 import dataplug.utils as utils
 
-GRAPH_MARKER = "g--"
-
 DEFAULT_PORT = os.getenv("DATAPLUG_DEFAULT_PORT", 8529)
 DEFAULT_HOST = os.getenv("DATAPLUG_DEFAULT_HOST", "localhost")
 DEFAULT_DOMAIN = os.getenv("DATAPLUG_DEFAULT_DOMAIN", "dataplug")
@@ -27,8 +25,7 @@ class Client():
         self._system = None
 
         # Check client info to the Arango Database
-        self.db_config = db_config
-        self.check_credentials()
+        self.check_config(db_config)
 
         # Get domain and collection
         self.connect()
@@ -155,12 +152,19 @@ class Client():
                 is_edge = self._db_config["edge"]
             self._collection = self._domain.create_collection(collection_name,
                                                               edge=is_edge)
-
         return self._collection
 
-    def check_credentials(self):
+    def check_config(self, db_config=None):
         """Fill missing fields with default values
+
+            You can whether set protocol port and host separately or use the
+            condensed form such as "http://host:port"
+            port and protocol in condensed host string will take priority
         """
+        # Deep copy through setter
+        if db_config is not None:
+            self.db_config = db_config
+
         if "protocol" not in self._db_config or not isinstance(self._db_config["protocol"], str):
             self._db_config["protocol"] = "http"
         if "host" not in self._db_config:
@@ -171,6 +175,22 @@ class Client():
             self._db_config["username"] = ""
         if "password" not in self._db_config:
             self._db_config["password"] = ""
+
+        # 1- remove trailing slash
+        #
+        self._db_config["host"] = self._db_config["host"].strip()
+        self._db_config["host"] = self._db_config["host"].strip("/")
+        protocol_tmp = self._db_config["host"].rpartition("://")[0]
+        if protocol_tmp:
+            self._db_config["protocol"] = protocol_tmp
+            self._db_config["host"] = self._db_config["host"].rpartition("://")[-1]
+
+        port_tmp = self._db_config["host"].rpartition(":")[-1]
+        if port_tmp:
+            self._db_config["port"] = port_tmp
+            self._db_config["host"] = self._db_config["host"].rpartition(":")[0]
+
+
         return self._db_config
 
     def set(self, domain_name, collection_name):

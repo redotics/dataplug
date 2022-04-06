@@ -26,7 +26,4 @@ testpypi: build
 	@# twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 test:
-	export DATAPLUG_DEFAULT_PORT=7144
-	@echo "Please run arangod on localhost:7144 with  server.authentication = false"
-	@sleep 2
 	pytest -v tests

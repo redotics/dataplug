@@ -2,6 +2,8 @@ import dataplug
 import copy
 
 EDGE_MARKER = "__"
+GRAPH_MARKER = "g--"
+
 
 def split_node_id(node_id):
     """ split and extract collection name """
