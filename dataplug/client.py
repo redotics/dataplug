@@ -34,6 +34,8 @@ class Client():
                 self.domain = domain
             if isinstance(collection, str) and len(collection) > 0:
                 self.collection = collection
+        else:
+            raise ConnectionError(f"Could not connect with collection {collection}")
 
     def connect(self):
         """ It connects to the database using the server config
@@ -189,7 +191,6 @@ class Client():
         if port_tmp:
             self._db_config["port"] = port_tmp
             self._db_config["host"] = self._db_config["host"].rpartition(":")[0]
-
 
         return self._db_config
 

@@ -34,7 +34,9 @@ class Node():
 
         if domain == "":
             domain = dataplug.client.DEFAULT_DOMAIN
+
         self.client = dataplug.client.Client(domain, collection, client_config)
+        self.collection_name = collection
 
         # Data initialization can impact client, so done after
         self._data = {}
@@ -212,7 +214,9 @@ class Node():
                     # From here I could get all the updated data and set it to self.data
                 else:
                     # INSERT new object with predefined key
-                    newbody = self.client.collection.insert(self.data, return_new=True)
+                    newbody = self.client.collection.insert(self.data,
+                        #self.filter_data(keep_fields=keep_private_fields),
+                        return_new=True)
                     # synchronise keys in case database had to change it
                     if KEY in newbody:
                         self.key(newbody[KEY])
